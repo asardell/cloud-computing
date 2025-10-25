@@ -44,8 +44,8 @@ Docker est une technologie de conteneurisation qui permet de **packager une appl
 ### Pré requis
 
 - Créer un compte sur Docker Hub : [https://hub.docker.com](https://hub.docker.com)  
-  *Cela permettra de télécharger des images et d’en partager si besoin.*  
-- Aller sur [Play with Docker](https://www.docker.com/play-with-docker/)  
+  *Cela permettra de télécharger des images et d'utiliser les labs en ligne docker.*  
+- Aller sur [Play with Docker](https://labs.play-with-docker.com/)  
   *Environnement gratuit en ligne pour tester Docker sans installation locale.*  
 - Créer une instance sur Play with Docker  
   *Chaque instance est un mini serveur Linux où vous pourrez lancer vos conteneurs.*
@@ -229,4 +229,4 @@ docker container rm <container_id>
 
 - [Tutoriel Docker](https://training.play-with-docker.com/)
 - [Docker Hub](https://www.docker.com/)
-- [Play with docker](https://www.docker.com/play-with-docker/)
+- [Play with docker](https://labs.play-with-docker.com/)
