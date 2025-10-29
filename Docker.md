@@ -362,150 +362,6 @@ docker rm <container_name>
 
 # Introduction à Docker Swarm Mode
 
-## Contexte
-
-Jusqu’ici, nous avons utilisé **Docker sur un seul hôte**, avec quelques conteneurs isolés.  
-Mais en production, une application peut impliquer **des dizaines ou centaines de conteneurs** : base de données, front-end, API, workers, etc.  
-Pour coordonner tout cela, il faut un outil d’orchestration.
-
-Docker propose **deux outils principaux** :
-- **Docker Compose** → pour gérer plusieurs conteneurs sur une même machine.
-- **Docker Swarm Mode** → pour gérer plusieurs *machines Docker* en cluster, avec haute disponibilité et scalabilité.
-
-## Docker Swarm Mode : qu’est-ce que c’est ?
-
-**Docker Swarm** permet de :
-- Déployer et coordonner plusieurs nœuds (machines Docker).
-- Répartir automatiquement les conteneurs entre les nœuds.
-- Assurer la **haute disponibilité** (HA) avec plusieurs *managers*.
-- Offrir le **scaling** et le **load balancing** intégrés.
-
-Un cluster Swarm contient :
-- Des **nœuds managers** (gèrent le cluster, peuvent aussi exécuter des conteneurs).
-- Des **nœuds workers** (exécutent les conteneurs selon les ordres des managers).
-
-## Étapes principales du tutoriel
-
-### 1. Initialiser un Swarm
-Sur le premier nœud :
-
-
-```bash
-docker swarm init --advertise-addr $(hostname -i)
-```
-
-👉 Crée le **manager principal** du cluster.
-
-### 2. Ajouter un worker
-Sur un autre nœud :
-
-
-```bash
-docker swarm join --token <token> <ip_du_manager>
-```
-
-👉 Rejoint le Swarm comme **nœud worker**.
-
-Vérifier les membres du Swarm :
-
-
-```bash
-docker node ls
-```
-
-### 3. Déployer une application multi-conteneurs
-
-L’exemple utilisé est la **Voting App** (vote “cat vs dog”) disponible sur GitHub :  
-
-```bash
-git clone https://github.com/docker/example-voting-app
-cd example-voting-app
-```
-
-
-Cette application est composée de plusieurs services :  
-`redis`, `db`, `vote`, `result`, `worker`, `visualizer`.
-
-Le tout est défini dans un fichier `docker-stack.yml`.
-
----
-
-### 4. Déployer la stack
-Depuis le manager :
-
-```bash
-docker stack deploy --compose-file=docker-stack.yml voting_stack
-```
-
-
-Vérifier :
-```bash
-docker stack ls
-docker stack services voting_stack
-```
-
-
-Chaque **service** correspond à une image Docker, avec un certain nombre de **réplicas** (conteneurs identiques pour la scalabilité).
-
----
-
-### 5. Inspecter et visualiser le déploiement
-Lister les tâches (conteneurs) d’un service :
-
-```bash
-docker service ps voting_stack_vote
-```
-
-
-Une interface web intégrée permet de **visualiser le cluster** et **interagir avec l’app** (voter, voir les résultats, etc.).
-
----
-
-### 6. Scaler l’application
-Pour augmenter le nombre d’instances (ex. : 2 → 5) :
-
-```bash
-docker service scale voting_stack_vote=5
-```
-
-
-Docker Swarm crée automatiquement de nouveaux conteneurs sur les nœuds disponibles et met à jour la répartition du trafic.
-
----
-
-## 🧩 Concepts clés
-
-| Concept | Description |
-|----------|-------------|
-| **Swarm** | Ensemble de plusieurs moteurs Docker fonctionnant en cluster |
-| **Node** | Une machine (physique ou virtuelle) membre du Swarm |
-| **Manager** | Nœud contrôlant le cluster, gère la planification et les décisions |
-| **Worker** | Nœud exécutant les conteneurs selon les instructions du manager |
-| **Stack** | Groupe de services qui forment une application complète |
-| **Service** | Une tâche logique (ex. : base de données, API, front-end) |
-| **Task / Replica** | Instance d’un service, c’est-à-dire un conteneur en cours d’exécution |
-
----
-
-## 🚀 Conclusion
-
-Avec Docker Swarm :
-- Tu peux **déployer, gérer et faire évoluer** une application complète sur plusieurs machines.  
-- Tout est défini dans un **fichier Compose (YAML)**, simple à lire et versionner.  
-- Le scaling et la tolérance aux pannes sont automatiques.  
-
-👉 **En résumé :** Swarm est la brique d’orchestration native de Docker, idéale pour des déploiements distribués simples et pédagogiques.
-
----
-
-## 🔗 Pour aller plus loin
-- Phase 2 du tutoriel : orchestration avancée, sécurité, réseau  
-- Phase 3 : déploiement complet d’un projet de bout en bout  
-- Documentation : [https://docs.docker.com/engine/swarm](https://docs.docker.com/engine/swarm)
-
-
-# 🐳 Docker Swarm
-
 ## Découverte
 
 Jusqu’ici, nous avons utilisé **Docker sur un seul hôte**, avec quelques conteneurs isolés.  
@@ -588,7 +444,6 @@ docker node ls
 Exemple de sortie :
 
 ````markdown
-code :
 ID                           HOSTNAME  STATUS  AVAILABILITY  MANAGER STATUS  
 kytp4gq5mrvmdbb0qpifdxeiv *  node1     Ready   Active        Leader  
 lz1j4d6290j8lityk4w0cxls5    node2     Ready   Active  
@@ -615,7 +470,6 @@ docker service ls
 Exemple :
 
 ````markdown
-code :
 ID             NAME      MODE         REPLICAS   IMAGE           PORTS  
 9h8fz9rhv7uk   web       replicated   1/1        nginx:latest    *:80->80/tcp
 ````
