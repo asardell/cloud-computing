@@ -1,7 +1,7 @@
 # Docker 🐳
 
 - [Docker 🐳](#docker-)
-  - [Débuter avec Docker avec des images existantes](#débuter-avec-docker-avec-des-images-existantes)
+- [Comprendre Docker et la notion de conteneurs](#comprendre-docker-et-la-notion-de-conteneurs)
     - [Introduction](#introduction)
     - [Pré requis](#pré-requis)
     - [Vérifier l’installation](#vérifier-linstallation)
@@ -50,6 +50,12 @@ Docker est une technologie de conteneurisation qui permet de **packager une appl
 - Créer une instance sur Play with Docker  
   *Chaque instance est un mini serveur Linux où vous pourrez lancer vos conteneurs.*
 
+:warning: Dans la console de **Play With Docker (PWD)** :  
+
+- **Copier** : `CTRL + INSERT`  
+- **Coller** : `SHIFT + INSERT`  
+
+Contrairement aux raccourcis classiques (CTRL+C / CTRL+V), ces combinaisons fonctionnent directement dans les terminaux PWD pour éviter les conflits avec les commandes shell.
 
 ### Vérifier l’installation
 
@@ -77,6 +83,15 @@ Téléchargez l’image Alpine Linux (très légère) :
 ```bash
 docker image pull alpine
 ```
+
+:bulb: Alpine est une **image Docker très légère** basée sur Linux.  
+
+- Taille : ≈ 5 Mo → très rapide à télécharger et démarrer  
+- Contient uniquement l’essentiel pour exécuter des commandes Linux  
+- Idéale pour tester des services simples ou lancer des scripts courts  
+- Moins de dépendances et donc moins de risques de bugs ou failles  
+
+Dans ce TP, on utilise Alpine pour créer des containers légers qui dorment ou communiquent entre eux sans surcharger le cluster.
 
 Listez les images locales avec `docker image ls`.  
 
@@ -230,3 +245,550 @@ docker container rm <container_id>
 - [Tutoriel Docker](https://training.play-with-docker.com/)
 - [Docker Hub](https://www.docker.com/)
 - [Play with docker](https://labs.play-with-docker.com/)
+
+# Construire une image existante avec interface graphique
+
+## Objectif
+
+Apprendre à manipuler Docker avec une application Streamlit, créer un conteneur, l’exécuter sur un port exposé, et gérer ses conteneurs.  
+Le projet est léger et adapté à une VM de 4 Go.
+
+## Pré-requis
+
+- Créer un compte sur Docker Hub : [https://hub.docker.com](https://hub.docker.com)  
+  *Cela permettra de télécharger des images et d'utiliser les labs en ligne Docker.*
+- Aller sur [Play With Docker](https://labs.play-with-docker.com/)  
+  *Environnement gratuit en ligne pour tester Docker sans installation locale.*
+- Créer une instance sur Play With Docker  
+  *Chaque instance est un mini serveur Linux où vous pourrez lancer vos conteneurs.*
+
+## Pourquoi plutôt Docker ?
+
+- Permet de **packager des applications avec toutes leurs dépendances**  
+- Très utilisé en entreprise pour les **pipelines data**, les **microservices**, ou le **déploiement rapide**  
+- Exemple Data : visualiser un dashboard web léger ou exécuter un modèle ML dans un conteneur isolé  
+
+## Streamlit
+
+### Créer l’application Streamlit
+
+1. Dans le terminal, créez un dossier pour l’application :  
+
+```bash
+mkdir streamlit_app && cd streamlit_app
+```
+
+2. Créez le fichier **app.py** :  
+
+```bash
+echo "import streamlit as st
+st.title('Hello Docker!')
+st.write('Ceci est une app Streamlit dans un conteneur Docker 🐳')
+st.line_chart({'data': [1, 3, 2, 4, 5, 3]})
+" > app.py
+```
+
+
+### Créer le Dockerfile
+
+Dans le même dossier, créez le fichier **Dockerfile** :  
+
+```bash
+echo "FROM python:3.11-slim
+WORKDIR /app
+COPY app.py /app
+RUN pip install streamlit
+EXPOSE 8080
+CMD [\"streamlit\", \"run\", \"app.py\", \"--server.port=8080\", \"--server.address=0.0.0.0\"]" > Dockerfile
+```
+
+
+### Construire l’image Docker
+
+```bash
+docker build -t my-streamlit-app .
+```
+
+- `-t my-streamlit-app` → nom de l’image  
+- Le build télécharge Python, installe Streamlit et prépare l’image
+
+### Lancer le conteneur
+
+```bash
+docker run -d -p 8080:8080 my-streamlit-app
+```
+
+- `-d` → détaché, le conteneur tourne en arrière-plan  
+- `-p 8080:8080` → mappe le port 8080 du conteneur sur le port 8080 de la VM  
+
+Dans Play With Docker, cliquez sur le bouton **Open PORT** et tappez **8080** pour accéder à votre application Streamlit.
+
+### Supprimer le conteneur
+
+Lister les conteneurs en cours d'exécution  : 
+
+```bash
+docker ps
+```
+
+Supprimer un conteneur : 
+
+```bash
+docker rm <container_id>
+#ou
+docker rm <container_name>
+```
+
+
+### Tableau récapitulatif des commandes
+
+| Commande | Description |
+|----------|-------------|
+| docker build -t my-streamlit-app . | Construire l’image Docker |
+| docker run -d -p 8080:8080 my-streamlit-app | Lancer le conteneur |
+| docker ps | Lister les conteneurs actifs |
+| docker ps -a | Lister tous les conteneurs |
+| docker logs <id> | Afficher les logs d’un conteneur |
+| docker stop <id> | Stopper un conteneur |
+| docker rm <id> | Supprimer un conteneur |
+| docker container prune | Supprimer tous les conteneurs arrêtés |
+
+### 💡 Astuces
+
+- Chaque modification de **app.py** nécessite de **rebuilder l’image** avec `docker build`  
+- Vous pouvez créer plusieurs conteneurs de la même image sur différents ports pour tester plusieurs instances  
+- Cette configuration est **légère** et adaptée à une VM avec **4 Go RAM**
+
+
+# Introduction à Docker Swarm Mode
+
+## Contexte
+
+Jusqu’ici, nous avons utilisé **Docker sur un seul hôte**, avec quelques conteneurs isolés.  
+Mais en production, une application peut impliquer **des dizaines ou centaines de conteneurs** : base de données, front-end, API, workers, etc.  
+Pour coordonner tout cela, il faut un outil d’orchestration.
+
+Docker propose **deux outils principaux** :
+- **Docker Compose** → pour gérer plusieurs conteneurs sur une même machine.
+- **Docker Swarm Mode** → pour gérer plusieurs *machines Docker* en cluster, avec haute disponibilité et scalabilité.
+
+## Docker Swarm Mode : qu’est-ce que c’est ?
+
+**Docker Swarm** permet de :
+- Déployer et coordonner plusieurs nœuds (machines Docker).
+- Répartir automatiquement les conteneurs entre les nœuds.
+- Assurer la **haute disponibilité** (HA) avec plusieurs *managers*.
+- Offrir le **scaling** et le **load balancing** intégrés.
+
+Un cluster Swarm contient :
+- Des **nœuds managers** (gèrent le cluster, peuvent aussi exécuter des conteneurs).
+- Des **nœuds workers** (exécutent les conteneurs selon les ordres des managers).
+
+## Étapes principales du tutoriel
+
+### 1. Initialiser un Swarm
+Sur le premier nœud :
+
+
+```bash
+docker swarm init --advertise-addr $(hostname -i)
+```
+
+👉 Crée le **manager principal** du cluster.
+
+### 2. Ajouter un worker
+Sur un autre nœud :
+
+
+```bash
+docker swarm join --token <token> <ip_du_manager>
+```
+
+👉 Rejoint le Swarm comme **nœud worker**.
+
+Vérifier les membres du Swarm :
+
+
+```bash
+docker node ls
+```
+
+### 3. Déployer une application multi-conteneurs
+
+L’exemple utilisé est la **Voting App** (vote “cat vs dog”) disponible sur GitHub :  
+
+```bash
+git clone https://github.com/docker/example-voting-app
+cd example-voting-app
+```
+
+
+Cette application est composée de plusieurs services :  
+`redis`, `db`, `vote`, `result`, `worker`, `visualizer`.
+
+Le tout est défini dans un fichier `docker-stack.yml`.
+
+---
+
+### 4. Déployer la stack
+Depuis le manager :
+
+```bash
+docker stack deploy --compose-file=docker-stack.yml voting_stack
+```
+
+
+Vérifier :
+```bash
+docker stack ls
+docker stack services voting_stack
+```
+
+
+Chaque **service** correspond à une image Docker, avec un certain nombre de **réplicas** (conteneurs identiques pour la scalabilité).
+
+---
+
+### 5. Inspecter et visualiser le déploiement
+Lister les tâches (conteneurs) d’un service :
+
+```bash
+docker service ps voting_stack_vote
+```
+
+
+Une interface web intégrée permet de **visualiser le cluster** et **interagir avec l’app** (voter, voir les résultats, etc.).
+
+---
+
+### 6. Scaler l’application
+Pour augmenter le nombre d’instances (ex. : 2 → 5) :
+
+```bash
+docker service scale voting_stack_vote=5
+```
+
+
+Docker Swarm crée automatiquement de nouveaux conteneurs sur les nœuds disponibles et met à jour la répartition du trafic.
+
+---
+
+## 🧩 Concepts clés
+
+| Concept | Description |
+|----------|-------------|
+| **Swarm** | Ensemble de plusieurs moteurs Docker fonctionnant en cluster |
+| **Node** | Une machine (physique ou virtuelle) membre du Swarm |
+| **Manager** | Nœud contrôlant le cluster, gère la planification et les décisions |
+| **Worker** | Nœud exécutant les conteneurs selon les instructions du manager |
+| **Stack** | Groupe de services qui forment une application complète |
+| **Service** | Une tâche logique (ex. : base de données, API, front-end) |
+| **Task / Replica** | Instance d’un service, c’est-à-dire un conteneur en cours d’exécution |
+
+---
+
+## 🚀 Conclusion
+
+Avec Docker Swarm :
+- Tu peux **déployer, gérer et faire évoluer** une application complète sur plusieurs machines.  
+- Tout est défini dans un **fichier Compose (YAML)**, simple à lire et versionner.  
+- Le scaling et la tolérance aux pannes sont automatiques.  
+
+👉 **En résumé :** Swarm est la brique d’orchestration native de Docker, idéale pour des déploiements distribués simples et pédagogiques.
+
+---
+
+## 🔗 Pour aller plus loin
+- Phase 2 du tutoriel : orchestration avancée, sécurité, réseau  
+- Phase 3 : déploiement complet d’un projet de bout en bout  
+- Documentation : [https://docs.docker.com/engine/swarm](https://docs.docker.com/engine/swarm)
+
+
+# 🐳 Docker Swarm
+
+## Découverte
+
+Jusqu’ici, nous avons utilisé **Docker sur un seul hôte**, avec quelques conteneurs isolés.  
+Mais en production, une application peut impliquer **des dizaines ou centaines de conteneurs** : base de données, front-end, API, workers, etc.  
+Pour coordonner tout cela, il faut un outil d’orchestration.
+
+Docker propose **deux outils principaux** :
+- **Docker Compose** → pour gérer plusieurs conteneurs sur une même machine.
+- **Docker Swarm Mode** → pour gérer plusieurs *machines Docker* en cluster, avec haute disponibilité et scalabilité.
+
+## Docker Swarm Mode : qu’est-ce que c’est ?
+
+**Docker Swarm** permet de :
+- Déployer et coordonner plusieurs nœuds (machines Docker).
+- Répartir automatiquement les conteneurs entre les nœuds.
+- Assurer la **haute disponibilité** (HA) avec plusieurs *managers*.
+- Offrir le **scaling** et le **load balancing** intégrés.
+
+Un cluster Swarm contient :
+- Des **nœuds managers** (gèrent le cluster, peuvent aussi exécuter des conteneurs).
+- Des **nœuds workers** (exécutent les conteneurs selon les ordres des managers).
+
+### Rôles des nœuds
+- **Manager**
+  - Responsable de la **gestion du cluster** : planification des services, gestion de l’état des nœuds et des tâches.  
+  - Prend les décisions sur où et combien de containers déployer.  
+  - Peut aussi exécuter des containers, mais son rôle principal est administratif.  
+- **Worker**
+  - Exécute les **containers assignés** par le manager.  
+  - Ne prend pas de décision sur la planification.  
+  
+### Intérêt
+- Permet de **scaler facilement** les services (augmenter/diminuer les réplicas).  
+- Assure la **haute disponibilité** : si un nœud worker tombe, le manager redéploie les containers sur d’autres nœuds.  
+- Le manager peut avoir **plusieurs instances** pour garantir la tolérance aux pannes. 
+  
+Schéma mental : le manager est le "chef d’orchestre", les workers sont les musiciens qui exécutent les tâches.
+
+## Déploiement et Scaling d’un Service Web
+
+### Objectif
+
+Ce tutoriel montre comment :
+
+- Créer un cluster Swarm (plusieurs nœuds Docker qui coopèrent)  
+- Déployer un service web distribué (Nginx)  
+- Scaler ce service pour gérer plus de charge  
+- Comprendre comment Docker Swarm assure la répartition de charge et la tolérance aux pannes  
+
+### Lancer l’environnement
+
+1. Va sur [Play With Docker](https://labs.play-with-docker.com/).  
+2. Clique sur **Start**, puis **Add New Instance** → tu obtiens une VM Linux (`node1`).  
+3. Ajoute deux autres instances avec **Add New Instance** → tu as maintenant 3 nœuds : `node1`, `node2`, `node3`.  
+
+### Initialiser le Swarm
+
+Sur le nœud manager (**node1**) :
+
+```bash
+docker swarm init --advertise-addr $(hostname -i)
+```
+
+Docker crée le cluster Swarm et t’affiche une commande `docker swarm join` à exécuter sur les autres nœuds.
+
+Sur les autres nœuds (**node2, node3, …**) :
+
+```bash
+docker swarm join --token <token> <IP_manager>:2377)
+```
+
+### Vérifier les nœuds du cluster
+
+Sur le manager :
+
+```bash
+docker node ls
+```
+
+Exemple de sortie :
+
+````markdown
+code :
+ID                           HOSTNAME  STATUS  AVAILABILITY  MANAGER STATUS  
+kytp4gq5mrvmdbb0qpifdxeiv *  node1     Ready   Active        Leader  
+lz1j4d6290j8lityk4w0cxls5    node2     Ready   Active  
+qpl9d95hd8z0l1aox6uwb90d7    node3     Ready   Active  
+````
+
+Le symbole * indique le manager.  
+Seul le leader peut exécuter des commandes administratives comme `docker node ls`.
+
+### Créer un service web
+
+Créons un service **Nginx** exposé sur le port 80 :
+
+```bash
+docker service create -p 80:80 --name web nginx:latest
+```
+
+Puis vérifie qu’il est bien en cours d’exécution :
+
+```bash
+docker service ls
+```
+
+Exemple :
+
+````markdown
+code :
+ID             NAME      MODE         REPLICAS   IMAGE           PORTS  
+9h8fz9rhv7uk   web       replicated   1/1        nginx:latest    *:80->80/tcp
+````
+
+### Tester le service
+
+Sur n’importe quel nœud du cluster :
+
+```bash
+curl http://localhost:80
+```
+
+Tu devrais voir la page par défaut de **Nginx**.
+
+### Scaler (augmenter le nombre d’instances)
+
+Pour ajouter plus d’instances du service :
+
+```bash
+docker service scale web=15
+```
+
+Docker va automatiquement répartir les 15 containers Nginx sur les différents nœuds disponibles.
+
+Vérifie leur répartition :
+
+```bash
+docker service ps web
+```
+
+Exemple :
+
+````markdown
+ID             NAME      IMAGE           NODE      DESIRED STATE   CURRENT STATE  
+t5h2x3l7j9z0   web.1     nginx:latest    node1     Running         Running 1m ago  
+hj2a7c6g2s8l   web.2     nginx:latest    node2     Running         Running 1m ago  
+f9q3d8h4k2a7   web.3     nginx:latest    node3     Running         Running 1m ago  
+...
+````
+
+### Load Balancing Automatique
+
+Docker Swarm gère automatiquement la répartition du trafic entre tous les containers du service.  
+Même si ton service expose le port 80 sur un seul nœud, Swarm redirige les connexions vers n’importe quelle instance disponible.
+
+Cela signifie que tous les containers web participent à servir les utilisateurs, même s’ils sont sur différents nœuds.
+
+### Tolérance aux pannes
+
+Si un nœud tombe, Docker redéploie automatiquement ses containers sur d’autres nœuds :
+
+```bash
+docker node update --availability drain node2
+```
+
+Cela simule la mise hors service de node2.  
+
+Vérifie ensuite :
+
+```bash
+docker service ps web
+```
+
+Les containers qui étaient sur node2 ont été automatiquement replacés sur node1 et node3.
+
+Pour le remettre en ligne :
+
+```bash
+docker node update --availability active node2
+docker service ps web
+```
+
+
+### Réduire le nombre d’instances
+
+Pour réduire la charge :
+
+```bash
+docker service scale web=10
+docker service ps web
+```
+
+Swarm va supprimer 5 containers (au hasard), tout en gardant le service fonctionnel.
+
+### Compréhension du fonctionnement
+
+#### Swarm = un cluster de serveurs Docker
+
+Swarm transforme plusieurs hôtes Docker en un seul cluster logique.  
+Le manager orchestre les déploiements, les workers hébergent les containers.
+
+#### Service = application distribuée
+
+Un “service” est une application déclarée (ex: Nginx).  
+Swarm la déploie sous forme de réplicas (plusieurs containers identiques).
+
+#### Scaling = augmenter la capacité
+
+```bash
+docker service scale web=15
+docker service ps web
+```
+
+signifie : "Lance 15 serveurs Nginx identiques répartis dans le cluster."
+
+Plus de réplicas = plus de puissance pour servir des utilisateurs simultanés.
+
+#### Load Balancing intégré
+
+Swarm agit comme un répartiteur de charge interne :  
+Le port 80 du cluster redirige les connexions vers n’importe quel replica.
+
+Cela équilibre automatiquement le trafic entre les containers.  
+Aucun proxy manuel n’est nécessaire.
+
+#### Résilience
+
+Swarm surveille l’état des containers.  
+S’il détecte une panne, il redéploie les instances ailleurs.  
+C’est le principe de la **haute disponibilité (HA)**.
+
+#### Supprimer le service
+
+Pour supprimer le service **web** :
+
+```bash
+docker service rm web
+```
+
+Vérifie ensuite qu’il a bien été supprimé :
+
+```bash
+docker service ls
+```
+
+### En résumé
+
+| Fonction | Commande | Explication |
+|-----------|-----------|-------------|
+| Créer le cluster | docker swarm init | Démarre Swarm et définit le manager |
+| Joindre un nœud | docker swarm join | Ajoute un worker au cluster |
+| Lister les nœuds | docker node ls | Vérifie les membres du cluster |
+| Déployer un service | docker service create | Lance une app dans le cluster |
+| Scaler le service | docker service scale web=15 | Multiplie le nombre d’instances |
+| Répartir la charge | (automatique) | Load balancing intégré |
+| Gérer les pannes | docker node update --availability drain | Déplace les services en cas de problème |
+
+
+### Exemple visuel
+
+```
+          ┌────────────┐
+          │  Manager   │
+          │  node1     │
+          └─────┬──────┘
+                │
+ ┌──────────────┼────────────────┐
+ │              │                │
+▼              ▼                ▼
+node1         node2            node3
+(web.1)       (web.2)          (web.3)
+(web.4)       (web.5)          (web.6)
+   │             │                │
+   └─────── Load Balancer ────────┘
+                │
+          Utilisateurs 🌍
+```
+
+
+### À retenir
+
+- Chaque container = une instance serveur, pas un utilisateur.  
+- Les utilisateurs se connectent à travers le port exposé, et Swarm distribue leurs requêtes.  
+- Tu peux donc simuler plus de serveurs web (scaling), pas plus d’utilisateurs.  
+- Swarm rend ton application plus robuste, scalable et hautement disponible.  
+
