@@ -15,8 +15,61 @@
     - [Points clés à retenir](#points-clés-à-retenir)
   - [Tableau récapitulatif des commandes Docker](#tableau-récapitulatif-des-commandes-docker)
   - [Liens utiles](#liens-utiles)
+- [Construire une image existante avec interface graphique](#construire-une-image-existante-avec-interface-graphique)
+  - [Objectif](#objectif)
+  - [Pré-requis](#pré-requis-1)
+  - [Pourquoi plutôt Docker ?](#pourquoi-plutôt-docker-)
+  - [Streamlit](#streamlit)
+    - [Créer l’application Streamlit](#créer-lapplication-streamlit)
+    - [Créer le Dockerfile](#créer-le-dockerfile)
+    - [Construire l’image Docker](#construire-limage-docker)
+    - [Lancer le conteneur](#lancer-le-conteneur)
+    - [Supprimer le conteneur](#supprimer-le-conteneur)
+    - [Tableau récapitulatif des commandes](#tableau-récapitulatif-des-commandes)
+    - [💡 Astuces](#-astuces)
+- [Introduction à Docker Swarm Mode](#introduction-à-docker-swarm-mode)
+  - [Découverte](#découverte)
+  - [Docker Swarm Mode : qu’est-ce que c’est ?](#docker-swarm-mode--quest-ce-que-cest-)
+    - [Rôles des nœuds](#rôles-des-nœuds)
+    - [Intérêt](#intérêt)
+  - [Déploiement et Scaling d’un Service Web](#déploiement-et-scaling-dun-service-web)
+    - [Objectif](#objectif-1)
+    - [Lancer l’environnement](#lancer-lenvironnement)
+    - [Initialiser le Swarm](#initialiser-le-swarm)
+    - [Vérifier les nœuds du cluster](#vérifier-les-nœuds-du-cluster)
+    - [Créer un service web](#créer-un-service-web)
+    - [Tester le service](#tester-le-service)
+    - [Scaler (augmenter le nombre d’instances)](#scaler-augmenter-le-nombre-dinstances)
+    - [Load Balancing Automatique](#load-balancing-automatique)
+    - [Tolérance aux pannes](#tolérance-aux-pannes)
+    - [Réduire le nombre d’instances](#réduire-le-nombre-dinstances)
+    - [Compréhension du fonctionnement](#compréhension-du-fonctionnement)
+      - [Swarm = un cluster de serveurs Docker](#swarm--un-cluster-de-serveurs-docker)
+      - [Service = application distribuée](#service--application-distribuée)
+      - [Scaling = augmenter la capacité](#scaling--augmenter-la-capacité)
+      - [Load Balancing intégré](#load-balancing-intégré)
+      - [Résilience](#résilience)
+      - [Supprimer le service](#supprimer-le-service)
+    - [En résumé](#en-résumé)
+    - [Exemple visuel](#exemple-visuel)
+    - [À retenir](#à-retenir)
+  - [Formulaire Web Streamlit + MySQL](#formulaire-web-streamlit--mysql)
+    - [Objectif](#objectif-2)
+    - [Préparer l’environnement PWD](#préparer-lenvironnement-pwd)
+    - [Créer un réseau overlay](#créer-un-réseau-overlay)
+    - [Déployer MySQL](#déployer-mysql)
+    - [Préparer l’application Streamlit](#préparer-lapplication-streamlit)
+      - [Créer `app.py`](#créer-apppy)
+      - [Créer `requirements.txt`](#créer-requirementstxt)
+      - [Créer `Dockerfile`](#créer-dockerfile)
+    - [Construire l’image Streamlit](#construire-limage-streamlit)
+    - [Déployer le service Streamlit sur le Swarm](#déployer-le-service-streamlit-sur-le-swarm)
+    - [Tester l’application](#tester-lapplication)
+    - [Nettoyer](#nettoyer)
+    - [Conseils PWD](#conseils-pwd)
+    - [Schéma visuel du TP](#schéma-visuel-du-tp)
 
-## Débuter avec Docker avec des images existantes
+# Comprendre Docker et la notion de conteneurs
 
 **Objectif :** Découvrir Docker, manipuler des images et conteneurs, créer plusieurs instances, gérer l’isolation et nettoyer les conteneurs.
 
@@ -646,3 +699,238 @@ node1         node2            node3
 - Tu peux donc simuler plus de serveurs web (scaling), pas plus d’utilisateurs.  
 - Swarm rend ton application plus robuste, scalable et hautement disponible.  
 
+
+## Formulaire Web Streamlit + MySQL
+
+### Objectif
+
+- Créer un cluster Swarm (1 manager + 2 workers) sur PWD  
+- Déployer un service MySQL pour stocker les données  
+- Déployer un service Streamlit avec un formulaire web  
+- Insérer les infos du formulaire dans la base MySQL  
+- Tester la communication entre les containers et observer le fonctionnement du Swarm  
+
+### Préparer l’environnement PWD
+
+Crée 3 instances dans PWD :  
+
+- node1 → manager  
+- node2 → worker  
+- node3 → worker  
+
+Sur **node1 (manager)**, initialise le Swarm :
+
+```bash
+docker swarm init --advertise-addr $(hostname -i)
+```
+
+Copie la commande `docker swarm join` affichée par Docker.  
+
+Sur **node2** et **node3 (workers)**, colle la commande join pour les joindre au Swarm.  
+
+Vérifie sur **node1** que tous les nœuds sont prêts :
+
+```bash
+docker node ls
+```
+
+### Créer un réseau overlay
+
+Sur **node1 (manager)** :
+
+```bash
+docker network create --driver overlay app-network
+```
+
+Tous les services doivent être sur ce réseau pour communiquer entre eux.
+
+### Déployer MySQL
+
+Sur **node1** :
+
+```bash
+docker service create --name mysql-db --network app-network --env MYSQL_ROOT_PASSWORD=root --env MYSQL_DATABASE=contactsdb --env MYSQL_USER=user --env MYSQL_PASSWORD=password mysql:8.0
+```
+
+- Nom du service : **mysql-db**  
+- Base : **contactsdb**  
+- Utilisateur : **user / password**  
+
+Tester MySQL :  
+
+Récupère le container MySQL :
+
+```bash
+docker ps
+```
+
+Connecte-toi à MySQL :  
+
+```bash
+docker exec -it <container_id> mysql -uuser -ppassword contactsdb
+```
+
+Crée la table `contacts` :
+
+```bash
+CREATE TABLE contacts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255),
+    email VARCHAR(255),
+    message TEXT
+);
+```
+
+puis tappez `exit`.
+
+### Préparer l’application Streamlit
+
+Sur **node1**, crée un dossier `app` et les fichiers nécessaires depuis le terminal : 
+
+```bash
+mkdir app && cd app
+```
+
+#### Créer `app.py`
+
+```bash
+cat > app.py
+import streamlit as st
+import mysql.connector
+
+conn = mysql.connector.connect(host="mysql-db", user="user", password="password", database="contactsdb")
+cursor = conn.cursor()
+
+st.title("Formulaire de contact")
+name = st.text_input("Nom")
+email = st.text_input("Email")
+message = st.text_area("Message")
+
+if st.button("Envoyer"):
+    if name and email and message:
+        cursor.execute("INSERT INTO contacts (name,email,message) VALUES (%s,%s,%s)", (name,email,message))
+        conn.commit()
+        st.success("Message ajouté !")
+    else:
+        st.error("Remplissez tous les champs !")
+```
+puis tappez Ctrl+D  pour sortir du terminal.
+Vous pouvez vérifier le contenu du fichier directement dans l'editeur de PWD.
+
+#### Créer `requirements.txt`
+
+```bash
+cat > requirements.txt
+streamlit
+mysql-connector-python
+```
+
+puis tappez Ctrl+D  pour sortir du terminal.
+Vous pouvez vérifier le contenu du fichier directement dans l'editeur de PWD.
+
+#### Créer `Dockerfile`
+
+```bash
+cat > Dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+CMD ["streamlit","run","app.py","--server.port=8501","--server.address=0.0.0.0"]
+```
+
+puis tappez Ctrl+D  pour sortir du terminal.
+Vous pouvez vérifier le contenu du fichier directement dans l'editeur de PWD.
+
+:warning: ces commandes doivent être tapées dans le terminal PWD ou dans l'editor de PWD.
+
+### Construire l’image Streamlit
+
+Sur **node1** :
+
+```bash
+docker build -t streamlit-app .
+```
+
+### Déployer le service Streamlit sur le Swarm
+
+Sur PWD, l’image est locale sur node1 seulement.  
+Les autres nœuds n’ont pas l’image et ne peuvent pas démarrer le container.  
+Pour que ça fonctionne, on force le service à tourner sur **node1** :
+
+```bash
+docker service create --name streamlit-app --network app-network --replicas 1 -p 8501:8501 --constraint 'node.hostname==node1' streamlit-app
+```
+
+- `--constraint 'node.hostname==node1'` → force le container sur node1  
+- `-p 8501:8501` → expose Streamlit pour le navigateur  
+
+### Tester l’application
+
+Depuis le navigateur PWD : ouvrir le port `8501`
+
+- Remplir le formulaire et clique sur “Envoyer”  
+- Vérifir que les données ont été ajoutées dans MySQL :
+
+```bash
+docker exec -it $(docker ps -q -f name=mysql-db) mysql -uuser -ppassword contactsdb
+```
+
+```bash
+SELECT * FROM contacts;
+```
+
+Tu dois voir le nom, l’email et le message ajoutés depuis Streamlit.
+
+### Nettoyer
+
+```bash
+docker service rm streamlit-app  
+```
+
+```bash
+docker service rm mysql-db  
+```
+
+```bash
+docker network rm app-network
+```
+
+### Conseils PWD
+
+- Exécuter toutes les commandes Swarm sur le **manager (node1)**  
+- Les services doivent être sur le même **réseau overlay**  
+- Les volumes MySQL sont temporaires sur PWD  
+- Streamlit peut être scalé, mais avec image locale sur PWD, il faut forcer le nœud ou pousser sur Docker Hub  
+
+### Schéma visuel du TP
+
+```
+          ┌────────────┐
+          │  Manager   │
+          │  node1     │
+          └─────┬──────┘
+               │
+       ┌───────┴────────┐
+       │                │
+      node2             node3
+     (worker)          (worker)
+       │                │
+       └────────────┬───┘
+                    │
+           ┌────────┴─────────┐
+           │    Overlay       │
+           │   app-network    │
+           └────────┬─────────┘
+                    │
+        ┌───────────┴───────────┐
+        │                       │
+   ┌─────────────┐        ┌──────────────┐
+   │  MySQL DB   │        │ Streamlit App│
+   │ mysql-db    │        │ streamlit-app│
+   └─────────────┘        └──────────────┘
+```
+
+- Le **Streamlit App** communique avec **MySQL DB** via le réseau overlay `app-network`.  
+- Tous les services sont orchestrés par le **Swarm**, qui gère la réplication et la tolérance aux pannes.
