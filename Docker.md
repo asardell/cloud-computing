@@ -27,6 +27,11 @@
     - [Supprimer le conteneur](#supprimer-le-conteneur)
     - [Tableau récapitulatif des commandes](#tableau-récapitulatif-des-commandes)
     - [💡 Astuces](#-astuces)
+- [Quelques notions de Réseau](#quelques-notions-de-réseau)
+  - [La notion de port sur un PC :](#la-notion-de-port-sur-un-pc-)
+  - [Les ports sur le web et en localhost](#les-ports-sur-le-web-et-en-localhost)
+    - [En gros](#en-gros)
+    - [Schéma récapitulatif](#schéma-récapitulatif)
 - [Introduction à Docker Swarm Mode](#introduction-à-docker-swarm-mode)
   - [Découverte](#découverte)
   - [Docker Swarm Mode : qu’est-ce que c’est ?](#docker-swarm-mode--quest-ce-que-cest-)
@@ -412,6 +417,56 @@ docker rm <container_name>
 - Vous pouvez créer plusieurs conteneurs de la même image sur différents ports pour tester plusieurs instances  
 - Cette configuration est **légère** et adaptée à une VM avec **4 Go RAM**
 
+#  Quelques notions de Réseau
+
+## La notion de port sur un PC :
+
+Imagine que ton **ordinateur est comme une maison** :
+
+- L’ordinateur a une **seule adresse** (c’est l’IP) : c’est l’équivalent de l’adresse de ta maison dans la ville.  
+- Mais dans cette maison, il y a **plein de portes** : la porte de la cuisine, la porte du salon, la porte de la chambre… chacune a une fonction spécifique.  
+
+Chaque **port** sur l’ordinateur, c’est comme une **porte spéciale de la maison** :  
+
+- Si quelqu’un veut t’envoyer un message pour regarder la télé, il va frapper à la **porte du salon** (port 80 pour un site web, par exemple).  
+- Si quelqu’un veut t’envoyer un message pour le courrier électronique, il va frapper à la **porte de la salle de courrier** (port 25 pour le mail).  
+- Si tu ne veux pas qu’on entre dans une pièce, tu peux **verrouiller la porte** (le port fermé).  
+
+**Donc, un port, c’est juste une porte d’entrée virtuelle dans ton ordinateur** qui permet à des programmes différents de recevoir des messages différents, même si tout passe par la même adresse de la maison.
+
+## Les ports sur le web et en localhost
+
+- **Localhost (127.0.0.1)** = parler à soi-même dans sa maison.  
+- Même en restant chez soi, chaque programme écoute sur **une porte spécifique** (un port) :  
+  - Exemple : ton serveur web local écoute sur le **port 3000**.  
+  - Pour y accéder : `http://localhost:3000` → tu ouvres la **porte 3000 de ta maison** pour voir ce qui se passe dans cette pièce.  
+
+### En gros
+
+| Concept informatique | Métaphore de la maison |
+|--------------------|----------------------|
+| Adresse IP / localhost | Adresse de la maison |
+| Port | Porte spécifique de la maison |
+
+**Résumé :** même sur ton propre ordinateur, chaque programme a sa **porte** pour recevoir les messages, et tout reste organisé sans se mélanger.
+
+### Schéma récapitulatif
+
+Adresse de la maison : 127.0.0.1 (localhost)
+
+````markdown
+          [Maison = ton PC]
+  ---------------------------------
+  |        Salon (Port 80)       |  ← site web
+  |        Cuisine (Port 25)     |  ← emails
+  |        Bureau (Port 22)      |  ← accès à distance
+  |        Chambre (Port 3000)   |  ← site local / dev
+  ---------------------------------
+````
+
+Chaque pièce = un programme/service
+Chaque porte = un port qui reçoit les messages
+Localhost = toi qui parles à ta propre maison
 
 # Introduction à Docker Swarm Mode
 
