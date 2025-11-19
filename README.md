@@ -93,7 +93,7 @@ Le pipeline se découpe en plusieurs briques, chacune jouant un rôle précis :
                             └───────────────┘
 ````
 
-Bonus Airflow pour l'orchestration et le scheduling (OPTION):
+Bonus Airflow pour l'orchestration et le scheduling (OPTION)
 
 ## Description des composants et intérêt dans le projet
 
@@ -245,4 +245,4 @@ Cette progression permet aux étudiants de **construire progressivement un pipel
 | Superset / Trino   | - Mot de passe admin simple <br> - Restrictions d’accès aux dashboards / SQL editor | - Comprendre l’authentification pour BI et moteur SQL distribué |
 | Bonnes pratiques   | - Fixer les versions des images <br> - Sensibiliser aux ports exposés et volumes non sécurisés | - Découvrir les bonnes pratiques de sécurité sur les conteneurs et le cloud |
 
-**Note : **  Cette sécurisation est volontairement simple et pédagogique, adaptée à un TP de 20h. Elle **introduit les concepts clés de cybersécurité** : authentification, isolation, contrôle d’accès et bonnes pratiques sur les conteneurs.
+:bulb: Cette sécurisation est volontairement simple et pédagogique, adaptée à un TP de 20h. Elle **introduit les concepts clés de cybersécurité** : authentification, isolation, contrôle d’accès et bonnes pratiques sur les conteneurs.
