@@ -1,5 +1,9 @@
 # Docker 🐳
 
+<p align="center">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/Docker_%28container_engine%29_logo.svg/1280px-Docker_%28container_engine%29_logo.svg.png" alt="Source de l'image" width="600"/>
+</p>
+
 - [Docker 🐳](#docker-)
 - [Comprendre Docker et la notion de conteneurs](#comprendre-docker-et-la-notion-de-conteneurs)
     - [Introduction](#introduction)
@@ -15,6 +19,12 @@
     - [Points clés à retenir](#points-clés-à-retenir)
   - [Tableau récapitulatif des commandes Docker](#tableau-récapitulatif-des-commandes-docker)
   - [Liens utiles](#liens-utiles)
+- [Installer Docker sur Windows et comprendre ses composants](#installer-docker-sur-windows-et-comprendre-ses-composants)
+  - [Installer Docker Desktop](#installer-docker-desktop)
+    - [Vérification](#vérification)
+  - [Rôle de Docker Desktop](#rôle-de-docker-desktop)
+  - [WSL 2 (Windows Subsystem for Linux)](#wsl-2-windows-subsystem-for-linux)
+  - [Pourquoi utiliser Docker sur Windows ?](#pourquoi-utiliser-docker-sur-windows-)
 - [Construire une image existante avec interface graphique](#construire-une-image-existante-avec-interface-graphique)
   - [Objectif](#objectif)
   - [Pré-requis](#pré-requis-1)
@@ -24,6 +34,7 @@
     - [Créer le Dockerfile](#créer-le-dockerfile)
     - [Construire l’image Docker](#construire-limage-docker)
     - [Lancer le conteneur](#lancer-le-conteneur)
+    - [En résumé](#en-résumé)
     - [Supprimer le conteneur](#supprimer-le-conteneur)
     - [Tableau récapitulatif des commandes](#tableau-récapitulatif-des-commandes)
     - [💡 Astuces](#-astuces)
@@ -32,13 +43,51 @@
   - [Les ports sur le web et en localhost](#les-ports-sur-le-web-et-en-localhost)
     - [En gros](#en-gros)
     - [Schéma récapitulatif](#schéma-récapitulatif)
+- [Gestion des volumes Docker](#gestion-des-volumes-docker)
+  - [Pourquoi utiliser des volumes ?](#pourquoi-utiliser-des-volumes-)
+  - [Types de stockage](#types-de-stockage)
+    - [Volumes nommés](#volumes-nommés)
+    - [Bind mounts (montage de répertoire hôte)](#bind-mounts-montage-de-répertoire-hôte)
+  - [Commandes utiles](#commandes-utiles)
+    - [Créer un volume](#créer-un-volume)
+    - [Lister les volumes](#lister-les-volumes)
+    - [Inspecter un volume](#inspecter-un-volume)
+    - [Supprimer un volume](#supprimer-un-volume)
+  - [Gestion des volumes Docker avec des fichiers CSV](#gestion-des-volumes-docker-avec-des-fichiers-csv)
+    - [Arborescence du projet](#arborescence-du-projet)
+    - [Préparer un script Python](#préparer-un-script-python)
+    - [Créer un fichier Dockerfile](#créer-un-fichier-dockerfile)
+    - [Créer et monter un volume Docker](#créer-et-monter-un-volume-docker)
+    - [Construire l’image Docker](#construire-limage-docker-1)
+    - [Lancer le conteneur pour générer le CSV](#lancer-le-conteneur-pour-générer-le-csv)
+    - [Vérifier la persistance](#vérifier-la-persistance)
+    - [Lister les fichiers dans un volume nommé](#lister-les-fichiers-dans-un-volume-nommé)
+    - [Explorer le volume en mode interactif](#explorer-le-volume-en-mode-interactif)
+    - [Bonnes pratiques](#bonnes-pratiques)
+  - [Générer un CSV avec Docker et monter un dossier local](#générer-un-csv-avec-docker-et-monter-un-dossier-local)
+    - [Modifier le script `generate_csv.py`](#modifier-le-script-generate_csvpy)
+    - [Préparer un dossier local pour stocker les CSV](#préparer-un-dossier-local-pour-stocker-les-csv)
+    - [Construire l’image Docker](#construire-limage-docker-2)
+    - [Lancer le conteneur Python avec un bind mount](#lancer-le-conteneur-python-avec-un-bind-mount)
+    - [Vérifier le fichier sur l’hôte](#vérifier-le-fichier-sur-lhôte)
+- [Introduction à Docker Compose](#introduction-à-docker-compose)
+  - [Objectif](#objectif-1)
+  - [Arborescence du projet](#arborescence-du-projet-1)
+  - [Fichier app.py](#fichier-apppy)
+  - [Fichier requirements.txt](#fichier-requirementstxt)
+  - [Fichier Dockerfile](#fichier-dockerfile)
+  - [Fichier docker-compose.yml](#fichier-docker-composeyml)
+  - [Créer la table MySQL](#créer-la-table-mysql)
+  - [Lancer toute l’application](#lancer-toute-lapplication)
+  - [Vérifier les données](#vérifier-les-données)
+  - [Nettoyer](#nettoyer)
 - [Introduction à Docker Swarm Mode](#introduction-à-docker-swarm-mode)
   - [Découverte](#découverte)
   - [Docker Swarm Mode : qu’est-ce que c’est ?](#docker-swarm-mode--quest-ce-que-cest-)
     - [Rôles des nœuds](#rôles-des-nœuds)
     - [Intérêt](#intérêt)
   - [Déploiement et Scaling d’un Service Web](#déploiement-et-scaling-dun-service-web)
-    - [Objectif](#objectif-1)
+    - [Objectif](#objectif-2)
     - [Lancer l’environnement](#lancer-lenvironnement)
     - [Initialiser le Swarm](#initialiser-le-swarm)
     - [Vérifier les nœuds du cluster](#vérifier-les-nœuds-du-cluster)
@@ -55,11 +104,11 @@
       - [Load Balancing intégré](#load-balancing-intégré)
       - [Résilience](#résilience)
       - [Supprimer le service](#supprimer-le-service)
-    - [En résumé](#en-résumé)
+    - [En résumé](#en-résumé-1)
     - [Exemple visuel](#exemple-visuel)
     - [À retenir](#à-retenir)
-  - [Formulaire Web Streamlit + MySQL](#formulaire-web-streamlit--mysql)
-    - [Objectif](#objectif-2)
+  - [Formulaire Web Streamlit + MySQL  avec Play With Docker](#formulaire-web-streamlit--mysql--avec-play-with-docker)
+    - [Objectif](#objectif-3)
     - [Préparer l’environnement PWD](#préparer-lenvironnement-pwd)
     - [Créer un réseau overlay](#créer-un-réseau-overlay)
     - [Déployer MySQL](#déployer-mysql)
@@ -70,9 +119,14 @@
     - [Construire l’image Streamlit](#construire-limage-streamlit)
     - [Déployer le service Streamlit sur le Swarm](#déployer-le-service-streamlit-sur-le-swarm)
     - [Tester l’application](#tester-lapplication)
-    - [Nettoyer](#nettoyer)
+    - [Nettoyer](#nettoyer-1)
     - [Conseils PWD](#conseils-pwd)
     - [Schéma visuel du TP](#schéma-visuel-du-tp)
+- [Mini-projet Docker : Extraction des données DPE par département](#mini-projet-docker--extraction-des-données-dpe-par-département)
+  - [Objectif pédagogique](#objectif-pédagogique)
+  - [Consignes générales](#consignes-générales)
+  - [Livrables attendus](#livrables-attendus)
+  - [Points pédagogiques visés](#points-pédagogiques-visés)
 
 # Comprendre Docker et la notion de conteneurs
 
@@ -94,7 +148,7 @@ Docker est une technologie de conteneurisation qui permet de **packager une appl
 
 - Déployer rapidement un **serveur PostgreSQL ou MySQL** dans un conteneur pour tester des pipelines de données.  
 - Lancer des **jobs Python ou R** avec toutes les librairies nécessaires préinstallées (pandas, numpy, scikit-learn, etc.) sans polluer votre machine locale.  
-- Tester des outils comme **Airflow, Spark ou MinIO** dans des conteneurs pour construire et orchestrer des pipelines de données.  
+- Tester des outils comme **Kafka, Airflow, Spark ou MinIO** dans des conteneurs pour construire et orchestrer des pipelines de données.  
 - Faciliter la collaboration : chaque membre de l’équipe peut exécuter exactement les mêmes conteneurs, assurant la **cohérence des environnements**.  
 
 :bulb: En résumé, Docker permet de travailler plus vite, plus proprement et de manière reproductible, ce qui est **indispensable dans les projets data modernes** où plusieurs outils et services doivent coexister.
@@ -131,7 +185,11 @@ docker container run hello-world
 ```
 
 - Docker cherche l’image `hello-world` localement.  
-- Si elle n’existe pas, elle est téléchargée depuis Docker Hub.  
+- Si elle n’existe pas, elle est téléchargée depuis Docker Hub avec 
+```bash
+docker pull hello-world:latest
+docker container run hello-world
+```
 - Le conteneur s’exécute, affiche un message, puis se ferme automatiquement.
 
 ### Télécharger une image légère
@@ -139,7 +197,7 @@ docker container run hello-world
 Téléchargez l’image Alpine Linux (très légère) :
 
 ```bash
-docker image pull alpine
+docker image pull alpine:latest
 ```
 
 :bulb: Alpine est une **image Docker très légère** basée sur Linux.  
@@ -166,48 +224,54 @@ Lister les fichiers à l’intérieur d’Alpine :
 ```bash
 docker container run alpine ls -l
 ```
-
-Afficher un message simple :
-
-```bash
-docker container run alpine echo "hello from alpine
-```
-
-
 Chaque commande `run` crée un nouveau conteneur éphémère qui s’arrête après l’exécution.
 
 ### Conteneur interactif
 
-Lancer un conteneur avec un shell interactif : 
+Au lieu d'exécuter une commande directement avec `docker container run alpine ls -l`, il est aussi possible **d’entrer dans le conteneur** pour lancer `ls` (ou d’autres commandes) depuis l’intérieur.
+
+1) Lancer un conteneur en mode interactif
+
+On peut démarrer un conteneur avec un shell :
 
 ```bash
-docker container run -it alpine /bin/sh
+docker run -it alpine sh
 ```
 
-À l’intérieur, tester des commandes comme `ls -l` ou `uname -a`.  
-Pour quitter, taper `exit`.
+2) Une fois à l’intérieur, il suffit d’utiliser la commande :
+
+```bash
+ls -l
+```
+
+À l’intérieur, on peut tester des commandes comme `ls -l` , `uname -a`, `mkdir toto`, etc.  
+
+3) Pour sortir du conteneur :
+
+```bash
+exit
+```
 
 ### Créer plusieurs conteneurs à partir de la même image
 
 - Conteneur 1 :
  
 ```bash
-docker container run -it alpine /bin/sh
+docker container run alpine
 ```
-
 
 - Conteneur 2 :  
 
 ```bash
-docker container run -it alpine /bin/sh
+docker container run alpine
 ```
-
 
 - Conteneur 3 : créer un fichier dans le containeur
 
 ```bash
 docker container run -it alpine /bin/sh
 echo "hello world" > hello.txt
+ls
 exit
 ```
 
@@ -259,13 +323,11 @@ Pour arrêter un conteneur actif :
 docker container kill <container_id>
 ```
 
-
 Pour supprimer un conteneur arrêté :  
 
 ```bash
 docker container rm <container_id>
 ```
-
 
 ### Points clés à retenir
 
@@ -304,6 +366,52 @@ docker container rm <container_id>
 - [Docker Hub](https://www.docker.com/)
 - [Play with docker](https://labs.play-with-docker.com/)
 
+# Installer Docker sur Windows et comprendre ses composants
+
+Docker permet de créer et exécuter des conteneurs pour isoler des applications et leurs dépendances. Sur Windows, il est recommandé d’utiliser **Docker Desktop** pour simplifier l’installation et la gestion des conteneurs.
+
+
+## Installer Docker Desktop
+
+1. Télécharger Docker Desktop depuis le site officiel :  
+   [https://www.docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop)
+
+2. Lancer l’installateur et suivre les étapes.
+
+3. Redémarrer l’ordinateur si nécessaire.
+
+### Vérification
+
+Ouvrir PowerShell ou l’invite de commandes et taper :  
+```shell
+docker --version
+docker compose version
+```
+
+Si Docker répond, l’installation est réussie.
+
+## Rôle de Docker Desktop
+
+- Fournit une **interface graphique** pour gérer les conteneurs et images.  
+- Installe et configure automatiquement **le moteur Docker (Docker Engine)** sur Windows.  
+- Intègre **Docker CLI** et **Docker Compose** pour travailler en ligne de commande.  
+- Simplifie la configuration réseau et le partage de fichiers avec Windows.
+
+## WSL 2 (Windows Subsystem for Linux)
+
+Docker Desktop sur Windows fonctionne généralement avec **WSL 2**, un sous-système Linux intégré à Windows :
+
+- Permet d’exécuter un noyau Linux complet sur Windows.  
+- Les conteneurs Docker s’exécutent dans cet environnement Linux pour plus de compatibilité.  
+- Nécessite l’activation de WSL 2 dans les fonctionnalités Windows et l’installation d’une distribution Linux (Ubuntu par exemple).
+
+## Pourquoi utiliser Docker sur Windows ?
+
+- Développer et tester des applications dans un environnement **identique à Linux**.  
+- Isoler les projets pour éviter les conflits de dépendances.  
+- Simplifier le déploiement d’applications sur d’autres machines ou serveurs.  
+- Travailler avec Docker Compose pour orchestrer plusieurs conteneurs facilement.
+
 # Construire une image existante avec interface graphique
 
 ## Objectif
@@ -328,12 +436,17 @@ Le projet est léger et adapté à une VM de 4 Go.
 
 ## Streamlit
 
+<p align="center">
+  <img src="https://streamlit.io/images/brand/streamlit-logo-secondary-colormark-darktext.png" alt="Source de l'image" width="600"/>
+</p>
+
 ### Créer l’application Streamlit
 
 1. Dans le terminal, créez un dossier pour l’application :  
 
 ```bash
-mkdir streamlit_app && cd streamlit_app
+mkdir streamlit_app
+cd streamlit_app
 ```
 
 2. Créez le fichier **app.py** :  
@@ -341,34 +454,89 @@ mkdir streamlit_app && cd streamlit_app
 ```bash
 echo "import streamlit as st
 st.title('Hello Docker!')
-st.write('Ceci est une app Streamlit dans un conteneur Docker 🐳')
+st.write('Ceci est une app Streamlit dans un conteneur Docker')
 st.line_chart({'data': [1, 3, 2, 4, 5, 3]})
 " > app.py
 ```
 
+:warning:  Vérifier l’encodage de `app.py`
+ - **VSCode** :
+   - Ouvre `app.py`
+   - En bas à droite, regarde l’encodage (UTF-8 ou UTF-16)
+   - Si ce n’est pas UTF-8, clique dessus → `Reopen with Encoding` → `UTF-8`
+   - Ensuite `File → Save with Encoding → UTF-8`
+
+ - **Notepad++** :
+   - `Encoding` → `Convert to UTF-8 (without BOM)` → sauvegarder
 
 ### Créer le Dockerfile
 
-Dans le même dossier, créez le fichier **Dockerfile** :  
+Un **Dockerfile** est un fichier texte qui décrit étape par étape comment construire l’image Docker d’une application.  
+Il contient les instructions nécessaires pour créer un environnement reproductible, portable et prêt à exécuter l’application.
+
+Voici un exemple de Dockerfile et l’explication de chaque ligne :
+
+Dans le même dossier, créez le fichier **Dockerfile** manuellement ou avec : 
 
 ```bash
-echo "FROM python:3.11-slim
+type nul > Dockerfile #sous Windows"
+touch Dockerfile #sous Linux
+```
+
+Ouvrir le fichier et copier coller cette configuration : 
+
+```Dockerfile
+FROM python:3.11-slim
 WORKDIR /app
 COPY app.py /app
 RUN pip install streamlit
 EXPOSE 8080
-CMD [\"streamlit\", \"run\", \"app.py\", \"--server.port=8080\", \"--server.address=0.0.0.0\"]" > Dockerfile
+CMD ["streamlit", "run", "app.py", "--server.port=8080", "--server.address=0.0.0.0"]
 ```
+
+Voici l’explication de chaque ligne :
+
+- `FROM python:3.11-slim`  : Choisit l’image de base. Ici, on utilise Python 3.11 dans une version légère appelée *slim*.  
+C’est le point de départ de l’image.
+- `WORKDIR /app` :  Définit le dossier de travail à l’intérieur du conteneur.  Toutes les commandes suivantes s’exécuteront dans `/app`.
+- `COPY app.py /app`  : Copie le fichier `app.py` depuis la machine hôte vers le dossier `/app` du conteneur.  Cela intègre le code de l’application dans l’image.
+- `RUN pip install streamlit`  : Exécute une commande pendant la construction de l’image.  Ici, on installe Streamlit dans l’environnement du conteneur.
+- `EXPOSE 8080` : Indique que l’application utilise le port 8080.  Cela ne publie pas le port, mais documente l’usage pour Docker et les utilisateurs.
+- `CMD ["streamlit", "run", "app.py", "--server.port=8080", "--server.address=0.0.0.0"]`  : Définit la commande exécutée automatiquement lorsque le conteneur démarre.  Ici, le conteneur lancera Streamlit et rendra l’application accessible depuis l’extérieur.
 
 
 ### Construire l’image Docker
+
+Pour transformer un Dockerfile en une image exécutable, Docker utilise la commande `docker build`.  
+Cette étape lit les instructions du Dockerfile et assemble une image prête à être lancée sous forme de conteneur.
+La commande `docker build` sert à :
+
+- lire le Dockerfile présent dans le dossier courant  
+- télécharger les images de base nécessaires  
+- copier les fichiers dans l’image  
+- installer les dépendances  
+- préparer l’environnement d’exécution  
+- produire une image finale que l’on peut lancer avec `docker run`
+
+En résumé, elle **compile** l’image à partir du Dockerfile.
 
 ```bash
 docker build -t my-streamlit-app .
 ```
 
-- `-t my-streamlit-app` → nom de l’image  
-- Le build télécharge Python, installe Streamlit et prépare l’image
+- `docker build` : lance la procédure de construction de l’image  
+- `-t my-streamlit-app` : donne un nom (tag) à l’image pour pouvoir l’utiliser plus facilement  
+- `.` : indique que le Dockerfile se trouve dans le répertoire courant
+
+Après l’exécution, Docker crée une image appelée `my-streamlit-app`.
+
+:warning: Le build d’une image Docker peut prendre plusieurs minutes, surtout si elle télécharge des dépendances ou des images de base, et l’image résultante peut être assez lourde.
+
+Vérifier que l'image existe : 
+
+```bash
+docker images
+```
 
 ### Lancer le conteneur
 
@@ -379,9 +547,21 @@ docker run -d -p 8080:8080 my-streamlit-app
 - `-d` → détaché, le conteneur tourne en arrière-plan  
 - `-p 8080:8080` → mappe le port 8080 du conteneur sur le port 8080 de la VM  
 
+En local, l'application est accessible sur `http://localhost:8080/`.
 Dans Play With Docker, cliquez sur le bouton **Open PORT** et tappez **8080** pour accéder à votre application Streamlit.
 
+### En résumé
+
+- Le Dockerfile sert à **décrire la recette complète** pour créer une image.  
+- Il garantit que l’environnement est **identique partout**, quel que soit l’ordinateur ou le serveur.  
+- Une fois le Dockerfile créé, on construit l’image avec :  
+  `docker build -t my-streamlit-app .`  
+- Puis on lance le conteneur avec :  
+  `docker run -p 8080:8080 my-streamlit-app`
+
 ### Supprimer le conteneur
+
+Docker permet de créer et gérer des conteneurs, et parfois il est nécessaire de les supprimer. Voici les principales méthodes.
 
 Lister les conteneurs en cours d'exécution  : 
 
@@ -389,14 +569,23 @@ Lister les conteneurs en cours d'exécution  :
 docker ps
 ```
 
-Supprimer un conteneur : 
-
+- Si le conteneur n’est pas en cours d’exécution, il suffit de faire :
 ```bash
-docker rm <container_id>
-#ou
-docker rm <container_name>
+docker rm <container_name_or_id>
+```
+- Sinon : 
+  - Pour un conteneur actif, il faut d’abord l’arrêter, puis le supprimer :
+```bash
+docker stop <container_name_or_id>
+docker rm <container_name_or_id>
 ```
 
+On peut aussi forcer la suppression (même si le conteneur tourne)
+
+:warning: Utiliser avec précaution car cela arrête et supprime le conteneur immédiatement :
+```bash
+docker rm -f <container_name_or_id>
+```
 
 ### Tableau récapitulatif des commandes
 
@@ -468,6 +657,466 @@ Chaque pièce = un programme/service
 Chaque porte = un port qui reçoit les messages
 Localhost = toi qui parles à ta propre maison
 
+# Gestion des volumes Docker
+
+Les volumes Docker permettent de **stocker des données de manière persistante** hors des conteneurs.  
+Sans volume, toutes les données créées dans un conteneur disparaissent dès que le conteneur est supprimé.
+
+## Pourquoi utiliser des volumes ?
+
+- Préserver les données au-delà du cycle de vie d’un conteneur
+- Partager des fichiers entre plusieurs conteneurs
+- Séparer le stockage des données et l’image du conteneur
+- Faciliter les sauvegardes et migrations
+
+## Types de stockage
+
+### Volumes nommés
+- Créés et gérés par Docker
+- Stockés dans `/var/lib/docker/volumes/`
+- Exemple : `mysql_data` pour une base MySQL
+
+### Bind mounts (montage de répertoire hôte)
+- Lie un dossier du système hôte à un conteneur
+- Utile pour le développement et le partage de fichiers
+- Exemple : `-v /home/user/app:/app` dans un `docker run`
+
+
+## Commandes utiles
+
+### Créer un volume
+
+```bash
+docker volume create nom_du_volume
+```
+
+### Lister les volumes
+
+```bash
+docker volume ls
+```
+
+### Inspecter un volume
+
+```bash
+docker volume inspect nom_du_volume
+```
+
+### Supprimer un volume
+
+```bash
+docker volume rm nom_du_volume
+```
+
+:warning: supprimer un volume supprime **toutes les données stockées**.
+
+## Gestion des volumes Docker avec des fichiers CSV
+
+Les volumes Docker permettent de **stocker des fichiers de manière persistante**, même si le conteneur est supprimé.  
+Pour illustrer cela, on va utiliser un conteneur Python qui génère des fichiers CSV dans un volume.
+
+### Arborescence du projet
+
+Créer un dossier de projet contenant :
+
+````markdown
+projet-volume/  
+- generate_csv.py  
+- Dockerfile  
+````
+
+Dans cet exemple, on utilise un Dockerfile pour créer une image Python contenant un script `generate_csv.py`.  
+Le conteneur écrit un fichier CSV dans un **volume Docker**, ce qui permet de **persister les données** même après la suppression du conteneur.
+
+### Préparer un script Python
+
+Créer un fichier `generate_csv.py` :
+
+```python
+import csv  
+import os  
+
+os.makedirs("/data", exist_ok=True)  
+
+with open("/data/contacts.csv", mode="w", newline="") as f:  
+    writer = csv.writer(f)  
+    writer.writerow(["Nom", "Email"])  
+    writer.writerow(["Alice", "alice@example.com"])  
+    writer.writerow(["Bob", "bob@example.com"])  
+
+print("CSV généré dans /data/contacts.csv")  
+```
+
+### Créer un fichier Dockerfile
+
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /data
+COPY generate_csv.py .
+```
+
+Le `.` à la fin signifie : copier generate_csv.py dans le dossier courant du conteneur (/data grâce à WORKDIR).
+
+### Créer et monter un volume Docker
+
+On va utiliser un volume nommé `csv_data` :
+
+```shell
+cd projet-volume
+docker volume create csv_data
+```
+
+### Construire l’image Docker
+
+```shell
+docker build -t csv-generator .
+```
+
+### Lancer le conteneur pour générer le CSV
+
+```shell
+docker run --rm -v csv_data:/data csv-generator python generate_csv.py
+```
+
+- `-v csv_data:/data` → monte le volume pour stocker le CSV  
+- `--rm` → supprime le conteneur après exécution  
+- Le script écrit le fichier `contacts.csv` dans le volume
+- 
+
+### Vérifier la persistance
+
+Lancer un nouveau conteneur pour lire le fichier CSV généré :
+
+```shell
+docker run --rm -v csv_data:/data -w /data python:3.11-slim cat contacts.csv
+```
+
+- Tu verras le contenu du CSV même si le conteneur qui l’a créé a été supprimé  
+- Cela démontre la **persistance des données avec les volumes Docker**
+
+### Lister les fichiers dans un volume nommé
+
+```shell
+docker run --rm -v csv_data:/data -w /data busybox ls -l
+```
+
+- `--rm` : supprime le conteneur après exécution  
+- `-v csv_data:/data` : monte le volume dans `/data` du conteneur  
+- `-w /data` : définit le dossier courant du conteneur  
+- `busybox` : image légère pour exécuter des commandes Unix  
+- `ls -l` : liste les fichiers avec détails
+
+### Explorer le volume en mode interactif
+
+```shell
+docker run --rm -it -v csv_data:/data -w /data busybox sh
+```
+
+- `-it` : mode interactif + terminal  
+- `sh` : ouvre un shell dans le conteneur
+
+Une fois à l’intérieur, tu peux utiliser :
+
+- `ls` : lister les fichiers  
+- `ls -l` : lister avec détails  
+- `cat contacts.csv` : afficher le contenu d’un fichier  
+
+Tape `exit` pour quitter le conteneur.
+
+### Bonnes pratiques
+
+- Utiliser des volumes pour toutes les données importantes (CSV, bases, logs…)  
+- Nommer les volumes de manière explicite pour éviter les confusions (`csv_data`, `mysql_data`)  
+- Supprimer les volumes inutilisés avec `docker volume prune`  
+
+## Générer un CSV avec Docker et monter un dossier local
+
+Cette méthode utilise un **bind mount** pour stocker les fichiers CSV directement sur le système de fichiers de l'hôte.
+
+### Modifier le script `generate_csv.py`
+
+```python
+import csv  
+import os  
+
+# Créer le dossier de sortie dans le conteneur
+os.makedirs("/data/output", exist_ok=True)
+
+with open("/data/output/contacts.csv", mode="w", newline="") as f:  
+    writer = csv.writer(f)  
+    writer.writerow(["Nom", "Email"])  
+    writer.writerow(["Alice", "alice@example.com"])  
+    writer.writerow(["Bob", "bob@example.com"])
+
+print("CSV généré dans /data/output/contacts.csv")
+```
+
+### Préparer un dossier local pour stocker les CSV
+
+Par exemple, créer un dossier `csv_output` dans `projet-volume/` :
+
+```shell
+mkdir csv_output
+```
+
+### Construire l’image Docker
+
+
+```shell
+docker build -t csv-generator-local .
+```
+
+### Lancer le conteneur Python avec un bind mount
+
+Pour Linux : 
+
+```shell
+docker run --rm -v $(pwd)/csv_output:/data csv-generator-local python generate_csv.py
+```
+
+Pour Windows PowerShell: 
+
+```shell
+docker run --rm -v ${PWD}/csv_output:/data/output csv-generator-local python generate_csv.py
+```
+
+- `-v $(pwd)/csv_output:/data` : lie le dossier local `csv_output` au dossier `/data` dans le conteneur  
+- `-w /data` : définit le dossier courant dans le conteneur  
+- Le script écrit `contacts.csv` dans `/data` → apparaît automatiquement dans `csv_output` sur l’hôte
+
+### Vérifier le fichier sur l’hôte
+
+```shell
+ls csv_output
+```
+
+- Le fichier `contacts.csv`est généré  
+- Le fichier est persistant et accessible directement depuis ton système de fichiers
+
+
+# Introduction à Docker Compose
+
+## Objectif
+
+- Lancer MySQL et Streamlit avec Docker Compose  
+- Connecter Streamlit à la base MySQL  
+- Insérer des données via un formulaire web  
+- Tester l’ensemble en local, sans Docker Swarm  
+
+Docker Compose permet de définir et lancer plusieurs services à partir d'un seul fichier `docker-compose.yml`.  
+Chaque service représente un conteneur (ex : MySQL, une application web, un backend…).  
+Compose gère automatiquement le réseau, les volumes et l'ordre de démarrage.
+
+Dans notre projet, le fichier `docker-compose.yml` contient deux services :
+
+- `mysql-db` : la base de données MySQL  
+- `streamlit-app` : l'application web
+
+Compose crée aussi un réseau interne pour que les conteneurs puissent communiquer entre eux en utilisant leurs noms de service comme hostname.
+
+## Arborescence du projet
+
+Créer un dossier de projet contenant :
+
+````markdown
+projet-streamlit-mysql/  
+- app.py  
+- requirements.txt  
+- Dockerfile  
+- docker-compose.yaml  
+````
+
+## Fichier app.py
+
+```python
+import streamlit as st  
+import mysql.connector  
+
+conn = mysql.connector.connect(  
+    host="mysql-db",  
+    user="user",  
+    password="password",  
+    database="contactsdb"  
+)  
+cursor = conn.cursor()  
+
+st.title("Formulaire de contact")  
+name = st.text_input("Nom")  
+email = st.text_input("Email")  
+message = st.text_area("Message")  
+
+if st.button("Envoyer"):  
+    if name and email and message:  
+        cursor.execute(  
+            "INSERT INTO contacts (name,email,message) VALUES (%s,%s,%s)",  
+            (name, email, message)  
+        )  
+        conn.commit()  
+        st.success("Message ajouté !")  
+    else:  
+        st.error("Remplissez tous les champs !")  
+```
+
+## Fichier requirements.txt
+
+```txt
+streamlit  
+mysql-connector-python  
+```
+
+
+## Fichier Dockerfile
+
+```dockerfile
+FROM python:3.11-slim  
+WORKDIR /app  
+COPY requirements.txt ./  
+RUN pip install --no-cache-dir -r requirements.txt  
+COPY . .  
+CMD ["streamlit","run","app.py","--server.port=8501","--server.address=0.0.0.0"]  
+```
+
+## Fichier docker-compose.yml
+
+```yaml
+version: "3.9"  
+
+services:  
+
+  mysql-db:  
+    image: mysql:8.0  
+    container_name: mysql-db  
+    environment:  
+      MYSQL_ROOT_PASSWORD: root  
+      MYSQL_DATABASE: contactsdb  
+      MYSQL_USER: user  
+      MYSQL_PASSWORD: password  
+    ports:  
+      - "3306:3306"  
+    volumes:  
+      - mysql_data:/var/lib/mysql  
+    networks:  
+      - app-network  
+
+  streamlit-app:  
+    build: .  
+    container_name: streamlit-app  
+    depends_on:  
+      - mysql-db  
+    ports:  
+      - "8501:8501"  
+    networks:  
+      - app-network  
+
+networks:  
+  app-network:  
+
+volumes:  
+  mysql_data:  
+```
+
+## Créer la table MySQL
+
+Avant de démarrer toute l'application, il peut être utile de lancer seulement le service MySQL, par exemple pour créer la base ou la table.
+La commande suivante démarre uniquement le service `mysql-db` :
+
+```shell
+docker compose up mysql-db -d  
+```
+
+- `mysql-db` : nom du service à lancer  
+- `-d` : exécution en mode détaché (le conteneur tourne en arrière-plan)
+
+:bulb: Une fois MySQL lancé, il devient accessible depuis les autres services Docker via le hostname `mysql-db`, et depuis l’hôte en utilisant le port 3306 si celui-ci est exposé dans le fichier Compose.
+
+Une fois le service MySQL lancé avec Docker Compose, il peut être utile d’ouvrir une session MySQL directement à l’intérieur du conteneur.  
+Cela permet de vérifier l’état de la base, de créer des tables ou de consulter les données.
+
+La commande suivante ouvre un terminal interactif à l’intérieur du conteneur `mysql-db`  
+et lance le client MySQL connecté à la base `contactsdb` :
+
+```shell
+docker exec -it mysql-db mysql -h mysql-db -uuser -ppassword contactsdb
+```
+
+- `docker exec` : exécute une commande dans un conteneur en cours d’exécution  
+- `-it` : mode interactif + terminal  
+- `mysql-db` : nom du conteneur où exécuter la commande  
+- `mysql` : lance le client MySQL installé dans le conteneur  
+- `-h mysql-db` : indique l’hôte MySQL (le nom du service dans Docker Compose)  
+- `-uuser` : nom d’utilisateur MySQL  
+- `-ppassword` : mot de passe MySQL  
+- `contactsdb` : base de données à utiliser
+
+Créer la table :  
+
+```sql
+CREATE TABLE contacts (  
+    id INT AUTO_INCREMENT PRIMARY KEY,  
+    name VARCHAR(255),  
+    email VARCHAR(255),  
+    message TEXT  
+);
+```  
+
+```shell
+exit  
+```
+
+## Lancer toute l’application
+
+Une fois que tous les fichiers du projet sont prêts (Dockerfile, app.py, requirements, docker-compose.yml), Docker Compose peut construire les images et démarrer l’ensemble des services.
+
+```shell
+docker compose up --build
+```
+
+Docker Compose :
+- crée les conteneurs  
+- met en place le réseau interne  
+- attache les logs des services au terminal  
+- démarre MySQL puis l’application Streamlit qui dépend de MySQL
+
+
+Ouvrir Streamlit sur : http://localhost:8501  
+
+
+## Vérifier les données
+
+:warning: l'application MySQL est ouvert en intéractif + terminal c'est pourquoi il faut ouvrir un nouveau terminal pour la commande suivante : 
+
+```shell
+docker exec -it mysql-db mysql -h mysql-db -uuser -ppassword contactsdb
+```
+
+```sql
+SELECT * FROM contacts;  
+```
+
+:bulb: Pourquoi `docker compose up --build` ne réinitialise pas MySQL ? Lorsque tu relances l’application avec `docker compose up --build`, MySQL ne repart pas de zéro.  La raison est simple : Docker Compose utilise un **volume persistant** pour stocker les données MySQL.
+
+Dans le fichier `docker-compose.yml`, on trouve :
+
+```yaml
+- mysql_data:/var/lib/mysql
+```
+
+Ce volume `mysql_data` contient toutes les données MySQL : la base, les tables et leur contenu.  
+Les volumes Docker sont conçus pour **survivre** aux redémarrages et aux reconstructions d’images.  
+Ainsi, même si l’on reconstruit l’image ou recrée les conteneurs, MySQL retrouve automatiquement ses données.
+
+
+## Nettoyer
+
+```shell
+docker compose down  
+docker compose down -v
+```
+
+La commande `docker compose down -v` arrête les conteneurs, supprime le réseau et **efface les volumes**, ce qui vide totalement MySQL.  
+Au prochain démarrage, MySQL sera comme neuf.
+
+
 # Introduction à Docker Swarm Mode
 
 ## Découverte
@@ -520,6 +1169,8 @@ Ce tutoriel montre comment :
 - Comprendre comment Docker Swarm assure la répartition de charge et la tolérance aux pannes  
 
 ### Lancer l’environnement
+
+:warning: Pour simplifier ce cas pratique, *utilisez Play With Docker* plutôt que votre machine local, cela permettra de créer des clusters plus facilement et rapidement.
 
 1. Va sur [Play With Docker](https://labs.play-with-docker.com/).  
 2. Clique sur **Start**, puis **Add New Instance** → tu obtiens une VM Linux (`node1`).  
@@ -755,7 +1406,7 @@ node1         node2            node3
 - Swarm rend ton application plus robuste, scalable et hautement disponible.  
 
 
-## Formulaire Web Streamlit + MySQL
+## Formulaire Web Streamlit + MySQL  avec Play With Docker
 
 ### Objectif
 
@@ -843,13 +1494,15 @@ puis tappez `exit`.
 Sur **node1**, crée un dossier `app` et les fichiers nécessaires depuis le terminal : 
 
 ```bash
-mkdir app && cd app
+mkdir app
+cd app
 ```
 
-#### Créer `app.py`
+#### Créer `app.py` 
 
-```bash
-cat > app.py
+Créer le fichier avec la commande `touch app.py` puis dans l'editeur de fichier PWD copier coller le script ci-dessous.
+
+```python
 import streamlit as st
 import mysql.connector
 
@@ -869,24 +1522,22 @@ if st.button("Envoyer"):
     else:
         st.error("Remplissez tous les champs !")
 ```
-puis tappez Ctrl+D  pour sortir du terminal.
-Vous pouvez vérifier le contenu du fichier directement dans l'editeur de PWD.
 
-#### Créer `requirements.txt`
 
-```bash
-cat > requirements.txt
+#### Créer `requirements.txt` 
+
+Créer le fichier avec la commande `touch requirements.txt` puis dans l'editeur de fichier PWD copier coller le script ci-dessous.
+
+```txt
 streamlit
 mysql-connector-python
 ```
 
-puis tappez Ctrl+D  pour sortir du terminal.
-Vous pouvez vérifier le contenu du fichier directement dans l'editeur de PWD.
-
 #### Créer `Dockerfile`
 
-```bash
-cat > Dockerfile
+Créer le fichier avec la commande `touch Dockerfile` puis dans l'editeur de fichier PWD copier coller le script ci-dessous.
+
+```dockerfile
 FROM python:3.11-slim
 WORKDIR /app
 COPY requirements.txt ./
@@ -894,11 +1545,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 CMD ["streamlit","run","app.py","--server.port=8501","--server.address=0.0.0.0"]
 ```
-
-puis tappez Ctrl+D  pour sortir du terminal.
-Vous pouvez vérifier le contenu du fichier directement dans l'editeur de PWD.
-
-:warning: ces commandes doivent être tapées dans le terminal PWD ou dans l'editor de PWD.
 
 ### Construire l’image Streamlit
 
@@ -987,5 +1633,61 @@ docker network rm app-network
    └─────────────┘        └──────────────┘
 ```
 
-- Le **Streamlit App** communique avec **MySQL DB** via le réseau overlay `app-network`.  
-- Tous les services sont orchestrés par le **Swarm**, qui gère la réplication et la tolérance aux pannes.
+
+# Mini-projet Docker : Extraction des données DPE par département
+
+## Objectif pédagogique
+
+Ce mini-projet a pour but de mettre en pratique les compétences Docker et Python acquises dans le TP précédent.  
+Les étudiants devront :  
+
+- Interroger l’API DPE de l’ADEME pour plusieurs départements  
+- Stocker les résultats dans des fichiers Parquet  
+- Exécuter un conteneur par département pour isoler le traitement  
+- Utiliser un volume local pour persister les fichiers sur l’hôte  
+
+Ce projet combine **Docker, Python, volumes/bind mounts, et paramétrisation par département**.
+
+## Consignes générales
+
+1. **Paramétrisation par département**  
+   - Fournir une liste de départements à traiter (ex. : 75, 69, 13)  
+   - Chaque conteneur doit récupérer le département via une variable d’environnement ou un paramètre  
+
+2. **Isolation avec Docker**  
+   - Construire une image Docker contenant le script Python qui interroge l’API et écrit un fichier Parquet  
+   - Lancer un conteneur **par département**, pour générer le fichier correspondant  
+
+3. **Persistance des fichiers**  
+   - Créer un dossier local sur l’hôte (ex. `dpe_output`)  
+   - Monter ce dossier dans chaque conteneur pour stocker les fichiers Parquet  
+   - Vérifier que les fichiers générés sont accessibles après suppression des conteneurs  
+
+4. **Organisation et bonnes pratiques**  
+   - Le script Python doit créer le dossier de sortie dans le conteneur si nécessaire  
+   - Rebuild de l’image Docker nécessaire si le script ou Dockerfile est modifié  
+   - Ne pas monter le dossier `/data` de l’image directement pour ne pas écraser le script  
+   - Monter un **sous-dossier** pour la sortie afin d’éviter les conflits  
+
+5. **Exécution parallèle**  
+   - Les conteneurs peuvent être exécutés en parallèle
+   - Chaque conteneur doit produire un fichier Parquet distinct correspondant au département traité  
+
+
+## Livrables attendus
+
+- Un **Dockerfile** fonctionnel contenant le script Python  
+- Un **script Python** paramétré pour interroger l’API DPE selon le département  
+- Un **dossier local** rempli de fichiers Parquet (`dpe_<departement>.parquet`)  
+- Une courte documentation expliquant :  
+  - Comment exécuter les conteneurs  
+  - Comment vérifier la présence et le contenu des fichiers  
+  - Comment ajouter de nouveaux départements à traiter  
+
+## Points pédagogiques visés
+
+- Compréhension des **conteneurs Docker et des volumes/bind mounts**  
+- Paramétrisation et réutilisation d’images Docker pour plusieurs cas  
+- Gestion de données externes (API) et persistance sur l’hôte  
+- Organisation de traitements indépendants pour plusieurs départements  
+- Workflow complet **développement → build → exécution → persistance**
