@@ -19,7 +19,7 @@
     - [Mauvais exemple](#mauvais-exemple)
     - [Pourquoi c’est stratégique en entreprise ?](#pourquoi-cest-stratégique-en-entreprise-)
   - [MinIO et Python](#minio-et-python)
-  - [TP pratique : MinIO et données ADEME](#tp-pratique--minio-et-données-ademe)
+  - [TP : MinIO et données ADEME](#tp--minio-et-données-ademe)
     - [Arborescence du TP](#arborescence-du-tp)
     - [docker-compose.yml](#docker-composeyml)
       - [1. Service `minio`](#1-service-minio)
@@ -32,6 +32,14 @@
     - [Commandes docker](#commandes-docker)
     - [Résultat  attendu](#résultat--attendu)
     - [Tester la persistance des données MinIO avec les volumes Docker](#tester-la-persistance-des-données-minio-avec-les-volumes-docker)
+  - [TP : Gestion des utilisateurs et policies](#tp--gestion-des-utilisateurs-et-policies)
+    - [Arborescence du projet](#arborescence-du-projet)
+    - [ubuntu/Dockerfile](#ubuntudockerfile)
+    - [policies/read-policy.json](#policiesread-policyjson)
+    - [policies/write-policy.json](#policieswrite-policyjson)
+    - [python/test\_users.py](#pythontest_userspy)
+    - [Commandes à exécuter](#commandes-à-exécuter)
+- [Liens utiles :](#liens-utiles-)
 
 
 # Introduction à MinIO
@@ -57,7 +65,6 @@ Il permet de stocker et récupérer des fichiers (objets) de manière simple et 
 | Google Cloud Storage | Stockage cloud Google, compatible S3 via certains outils |
 | MinIO | Open-source, léger, compatible S3, déployable localement ou en cloud souverain |
 
----
 
 ## Concepts clés
 
@@ -182,18 +189,28 @@ Il permet de :
 
 ## MinIO et Python
 
+L’**API S3** (Simple Storage Service) est un standard pour le stockage d’objets dans le cloud.  
+Elle a été créée par **AWS S3** et est aujourd’hui reprise par de nombreux services :
+
+- Amazon S3 (AWS)
+- Azure Blob Storage (via couches de compatibilité)
+- Google Cloud Storage
+- MinIO
+
+:bulb: Cela signifie qu’un même code peut fonctionner sur plusieurs fournisseurs de cloud.
+
 - Grâce à la **compatibilité S3**, on peut utiliser **Boto3**, le client officiel AWS, pour interagir avec MinIO :  
   - Créer des buckets  
   - Uploader et télécharger des fichiers  
   - Lister ou supprimer des objets  
 
-:bulb: **Astuce pédagogique** : Cela permet aux étudiants de se familiariser avec le stockage cloud même sans abonnement AWS ou Azure.
+:bulb: Cela permet  de se familiariser avec le stockage cloud même sans abonnement AWS ou Azure.
 
 <p align="center">
   <img src="https://miro.medium.com/v2/resize:fit:1200/1*rUUJdOUmInl-lXPq2hO4jA.jpeg" alt="Source de l'image" width="600"/>
 </p>
 
-## TP pratique : MinIO et données ADEME
+## TP : MinIO et données ADEME
 
 Ce TP permet de mettre en pratique les concepts de **stockage objet**, **buckets**, **formats de fichiers** et **data lake**, tout en utilisant Python et Boto3 dans un environnement local gratuit.
 Nous allons manipuler MinIO pour créer un **pipeline de données** basé sur les données publiques de l’ADEME.
@@ -237,12 +254,12 @@ C’est pour cela que l’on utilise **Boto3** : c’est une compétence transf�
 ```text
 tp-minio-ademe/
 ├── docker-compose.yml
-├── Dockerfile
-├── requirements.txt
-└── app/
-    ├── fetch_ademe_to_minio.py      # Récupère les données ADEME et les stocke dans MinIO
-    ├── json_to_csv.py               # Transforme les fichiers JSON en CSV
-    └── csv_to_parquet.py            # Convertit les CSV en Parquet avec partitionnement
+├── python/
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   ├── fetch_ademe_to_minio.py # Récupère les données ADEME et les stocke dans MinIO
+│   ├── json_to_csv.py          # Transforme les fichiers JSON en CSV
+│   └── csv_to_parquet.py       # Convertit les CSV en Parquet avec partitionnement
 ```
 
 ### docker-compose.yml
@@ -263,12 +280,13 @@ services:
       - minio_data:/data
 
   python:
-    build: .
+    build:
+      context: ./python
     container_name: minio-python
     depends_on:
       - minio
     volumes:
-      - ./app:/app
+      - ./python:/app
     working_dir: /app
     command: python fetch_ademe_to_minio.py
 
@@ -315,7 +333,7 @@ command: server /data --console-address ":9001"
 volumes:
   - minio_data:/data
 ```
-**Point clé pédagogique :**  
+**Point clé :**  
 Ce volume permet de **persister les fichiers même si le conteneur est supprimé**.  
 C’est très proche du fonctionnement d’un vrai data lake.
 
@@ -335,7 +353,7 @@ Forcer Docker à démarrer MinIO avant le script Python.
 
 ```yaml
 volumes:
-  - ./app:/app
+  - ./python:/app
 ```
 Permet de modifier les scripts localement sans reconstruire l’image.
 
@@ -344,7 +362,6 @@ command: python fetch_ademe_to_minio.py
 ```
 Lance automatiquement le script de récupération des données ADEME.
 
----
 
 ### requirements.txt
 
@@ -366,15 +383,19 @@ Rôle de chaque bibliothèque
 ### Dockerfile
 
 ```dockerfile
+# Image Python officielle
 FROM python:3.11.8-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
+# Copier requirements
+COPY requirements.txt /app/requirements.txt
 
+# Installer dépendances
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY app/ /app/
+# Copier tous les scripts Python
+COPY . /app/
 ```
 
 Explication
@@ -390,13 +411,13 @@ WORKDIR /app
 Répertoire de travail par défaut dans le conteneur.
 
 ```dockerfile
-COPY requirements.txt .
+COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 ```
 Installation des dépendances.
 
 ```dockerfile
-COPY app/ /app/
+COPY . /app/
 ```
 Copie de tous les scripts Python dans le conteneur.
 
@@ -689,6 +710,7 @@ Avant de lancer les scripts Python, il faut construire et démarrer l’infrastr
 1. Construction des images Docker
 
 ```bash
+cd ./tp-minio-ademe
 docker compose build
 ```
 
@@ -813,3 +835,195 @@ http://localhost:9001
 
 **Conclusion :**  
 Les données ne sont pas stockées dans le conteneur mais dans le **volume Docker**.
+
+
+## TP : Gestion des utilisateurs et policies
+
+Dans ce TP, nous allons approfondir l’utilisation de MinIO en créant des utilisateurs, en leur assignant des policies (droits d’accès) et en testant la connexion depuis Python.  
+Nous réutilisons le TP1 pour les scripts de gestion des données ADEME, mais nous ajoutons une couche de sécurité et de contrôle d’accès.
+
+### Arborescence du projet
+
+```
+tp-minio-ademe/
+├── docker-compose.yml
+├── python/
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   ├── test_users.py
+│   ├── fetch_ademe_to_minio.py
+│   ├── json_to_csv.py
+│   └── csv_to_parquet.py
+├── ubuntu/
+│   └── Dockerfile
+├── policies/
+│   ├── read-policy.json
+│   └── write-policy.json
+```
+
+Explications :
+
+- `python/` : contient tous les scripts Python du TP1 et le nouveau script `test_users.py`.  
+- `ubuntu/` : contiendra un Dockerfile pour un conteneur Ubuntu temporaire utilisé pour configurer `mc`, créer les utilisateurs et les policies.  
+- `policies/` : fichiers JSON décrivant les droits en lecture et écriture pour MinIO.
+
+MinIO fournit un client officiel appelé **`mc` (MinIO Client)** qui permet de :  
+- Créer des alias pour se connecter à un serveur MinIO.  
+- Ajouter et gérer des utilisateurs.  
+- Créer et attacher des policies (droits en lecture/écriture) à ces utilisateurs.  
+
+:warning: Le serveur MinIO ne contient que le serveur et la console web, il ne permet pas de créer des utilisateurs ni des policies.  Le conteneur Ubuntu sert donc de **station d’administration portable**, compatible sur tous les systèmes et réutilisable.
+
+### ubuntu/Dockerfile
+
+```dockerfile
+FROM ubuntu:22.04
+
+# Installer wget pour télécharger mc (MinIO client)
+RUN apt-get update && apt-get install -y wget curl && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /mc
+
+# Télécharger et rendre exécutable le client mc
+RUN wget https://dl.min.io/client/mc/release/linux-amd64/mc && chmod +x mc
+```
+
+Ce conteneur Ubuntu est utilisé pour exécuter le client `mc` et configurer MinIO : alias, création d’utilisateurs et attribution des policies.
+
+
+### policies/read-policy.json
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "s3:GetBucketLocation",
+        "s3:ListBucket",
+        "s3:GetObject"
+      ],
+      "Effect": "Allow",
+      "Resource": ["arn:aws:s3:::*"]
+    }
+  ]
+}
+```
+
+### policies/write-policy.json
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": [
+        "s3:GetBucketLocation",
+        "s3:ListBucket",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Effect": "Allow",
+      "Resource": ["arn:aws:s3:::*"]
+    }
+  ]
+}
+```
+
+Explication :
+- `read-policy` : accès en lecture seule (liste des buckets, lecture des objets).  
+- `write-policy` : lecture/écriture et suppression des objets.  
+
+
+### python/test_users.py
+
+```python
+import boto3
+
+MINIO_ENDPOINT = "http://minio:9000"
+
+users = {
+    "etl-user": "etlpassword",
+    "reader-user": "readerpassword"
+}
+
+# Test de connexion pour chaque utilisateur et récupération des buckets
+for user, pwd in users.items():
+    print(f"Test connexion pour {user}...")
+    try:
+        s3 = boto3.client(
+            "s3",
+            endpoint_url=MINIO_ENDPOINT,
+            aws_access_key_id=user,
+            aws_secret_access_key=pwd
+        )
+        buckets = s3.list_buckets()
+        print(f"✅ {user} connecté. Buckets: {[b['Name'] for b in buckets['Buckets']]}")
+    except Exception as e:
+        print(f"❌ Erreur pour {user}: {e}")
+```
+
+Explication :
+Ce script permet aux étudiants de vérifier que les utilisateurs et leurs droits fonctionnent correctement depuis Python, grâce à la compatibilité S3 de MinIO.
+
+
+### Commandes à exécuter
+
+
+1. Build du conteneur Ubuntu pour mc
+
+```bash
+docker build -t tp2-ubuntu ./ubuntu
+```
+
+2. Vérifier le réseau Docker du TP2
+
+```bash
+docker network ls
+```
+
+Repérer le réseau par défaut créé par `docker-compose`. Par exemple : `tp_minio_ademe_copy_default`.
+
+3. Lancer un conteneur Ubuntu temporaire pour créer les users et policies
+
+```bash
+docker run -it --network tp_minio_ademe_default -v ${PWD}/policies:/policies tp2-ubuntu
+```
+
+Puis, à l’intérieur du conteneur Ubuntu :
+
+```bash
+mc alias set local http://minio:9000 minioadmin minioadmin
+
+mc admin user add local etl-user etlpassword
+mc admin user add local reader-user readerpassword
+
+mc admin policy create local write-policy /policies/write-policy.json
+mc admin policy create local read-policy /policies/read-policy.json
+
+mc admin policy attach local write-policy --user etl-user
+mc admin policy attach local read-policy --user reader-user
+```
+
+Ensuite quitter le conteneur avec `exit`.
+
+4. Lancer le script Python de test des utilisateurs
+
+:bulb: Pas besoin de rebuild le conteneur Python si aucun package ou Dockerfile n’a été modifié, car le volume monté contient déjà tous les scripts.  
+
+```bash
+docker compose run python python test_users.py
+```
+
+:bulb: Vérifie que chaque utilisateur peut se connecter et que ses droits (lecture/écriture) sont appliqués correctement.
+
+
+5. Tester les policies directement dans l'interface MinIO.
+
+
+6. Modifier les scripts python du TP1 en utilisant les accès du user `etl-user`
+
+# Liens utiles : 
+
+- [Access Control with Policy Management](https://docs.min.io/enterprise/aistor-object-store/administration/iam/access/)
