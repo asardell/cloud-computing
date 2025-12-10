@@ -18,8 +18,15 @@
     - [Bonne pratique](#bonne-pratique)
     - [Mauvais exemple](#mauvais-exemple)
     - [Pourquoi c’est stratégique en entreprise ?](#pourquoi-cest-stratégique-en-entreprise-)
+    - [Astuces : Lecture d'un fichier parquet](#astuces--lecture-dun-fichier-parquet)
+  - [Apache Iceberg](#apache-iceberg)
+    - [Qu’est-ce qu’Apache Iceberg ?](#quest-ce-quapache-iceberg-)
+    - [Pourquoi ACID est important ?](#pourquoi-acid-est-important-)
+    - [Pourquoi Iceberg est intéressant](#pourquoi-iceberg-est-intéressant)
+    - [Cas d’usage typique](#cas-dusage-typique)
+    - [Conclusion](#conclusion)
   - [MinIO et Python](#minio-et-python)
-  - [TP : MinIO et données ADEME](#tp--minio-et-données-ademe)
+  - [TD : MinIO et données ADEME](#td--minio-et-données-ademe)
     - [Arborescence du TP](#arborescence-du-tp)
     - [docker-compose.yml](#docker-composeyml)
       - [1. Service `minio`](#1-service-minio)
@@ -32,14 +39,13 @@
     - [Commandes docker](#commandes-docker)
     - [Résultat  attendu](#résultat--attendu)
     - [Tester la persistance des données MinIO avec les volumes Docker](#tester-la-persistance-des-données-minio-avec-les-volumes-docker)
-  - [TP : Gestion des utilisateurs et policies](#tp--gestion-des-utilisateurs-et-policies)
+  - [TD : Gestion des utilisateurs et policies](#td--gestion-des-utilisateurs-et-policies)
     - [Arborescence du projet](#arborescence-du-projet)
     - [ubuntu/Dockerfile](#ubuntudockerfile)
     - [policies/read-policy.json](#policiesread-policyjson)
     - [policies/write-policy.json](#policieswrite-policyjson)
     - [python/test\_users.py](#pythontest_userspy)
     - [Commandes à exécuter](#commandes-à-exécuter)
-- [Liens utiles :](#liens-utiles-)
 
 
 # Introduction à MinIO
@@ -187,6 +193,81 @@ Il permet de :
 - réduire les coûts de lecture  
 - mieux organiser les données  
 
+### Astuces : Lecture d'un fichier parquet
+
+Les fichiers **Parquet** sont **colonnaires et optimisés pour le traitement Big Data**, mais ils ne sont pas facilement lisibles dans un simple ou éditeur de texte classique.  
+
+Pour visualiser ou explorer un fichier Parquet localement, on peut utiliser des outils **open source** comme [Parquet Viewer](https://github.com/mukunku/ParquetViewer). Une application graphique pour ouvrir et explorer les fichiers Parquet.
+
+:bulb: [Télécharger le fichier `ParquetViewer.exe`](https://github.com/mukunku/ParquetViewer/releases/download/v3.5.0.2/ParquetViewer.exe)
+
+
+<p align="center">
+  <img src="https://github.com/mukunku/ParquetViewer/raw/main/wiki_images/main_screenshot5.png" alt="Source de l'image" width="600"/>
+</p>
+
+
+## Apache Iceberg
+
+<p align="center">
+  <img src="https://cdn.prod.website-files.com/60f955236a773f743298d63b/64ba8c146aed466249378cb1_AnyConv.com__image6.webp" alt="Source de l'image" width="600"/>
+</p>
+
+
+### Qu’est-ce qu’Apache Iceberg ?
+
+Apache Iceberg est un **format de table open source pour les Data Lakes** qui apporte :
+
+- Une **gestion ACID complète** (Atomicité, Cohérence, Isolation, Durabilité) sur des fichiers stockés dans des systèmes distribués (S3, ADLS, GCS…).  
+- La possibilité de **travailler sur des tables immuables avec des snapshots**, ce qui rend les opérations comme **update, delete, merge** possibles sur un Data Lake.  
+- Une compatibilité avec des moteurs de calcul comme **Spark, Flink, Trino, Hive**.
+
+### Pourquoi ACID est important ?
+
+ACID est un acronyme pour :
+
+| Lettre | Signification | Pourquoi c’est utile |
+|--------|---------------|--------------------|
+| A | Atomicité | Chaque transaction est **tout ou rien** : aucune donnée partiellement écrite |
+| C | Cohérence | Les données restent **cohérentes** après chaque transaction |
+| I | Isolation | Plusieurs jobs ou utilisateurs peuvent écrire/lire simultanément **sans conflit** |
+| D | Durabilité | Une fois une transaction validée, elle est **persistante**, même en cas de panne |
+
+Sans ACID, les Data Lakes peuvent devenir **instables** lorsqu’on fait des mises à jour ou des suppressions, ce qui peut provoquer des **données corrompues ou incohérentes**.
+
+### Pourquoi Iceberg est intéressant
+
+1. **Gestion efficace des fichiers**  
+   - Iceberg maintient un **catalogue de métadonnées**.  
+   - Permet d’éviter de scanner **des milliers de fichiers** à chaque requête.  
+   - Compatible avec **partitionnement et clustering**.
+
+2. **Support ACID sur un Data Lake**  
+   - Les tables Iceberg permettent les **UPDATE, DELETE, MERGE** alors que des formats classiques comme Parquet ne le permettent pas nativement.  
+   - Idéal pour des pipelines de données **modifiables**.
+
+3. **Snapshots et time travel**  
+   - On peut revenir à un **ancien état de la table** en quelques lignes de code.  
+   - Très utile pour **audits, debugging, et pipelines reproductibles**.
+
+4. **Performance et scalabilité**  
+   - Partitionnement intelligent et indexation des fichiers.  
+   - Requêtes plus rapides sur de grands datasets même dans le Cloud.
+
+### Cas d’usage typique
+
+- **Data Lake d’entreprise** : stockage de données transactionnelles et analytiques avec possibilité de modifications.  
+- **Tables événementielles** : logs, clics web, transactions financières.  
+- **Machine Learning** : réentraîner des modèles avec des versions stables des datasets.
+
+
+### Conclusion
+
+- Iceberg apporte **robustesse et flexibilité** aux Data Lakes.  
+- Avec ACID et snapshots, on peut faire du **traitement batch ou streaming** sur des données fiables.  
+- Il combine **les avantages des Data Warehouses (fiabilité, cohérence)** et des **Data Lakes (scalabilité, coût réduit)**.
+
+
 ## MinIO et Python
 
 L’**API S3** (Simple Storage Service) est un standard pour le stockage d’objets dans le cloud.  
@@ -210,7 +291,7 @@ Elle a été créée par **AWS S3** et est aujourd’hui reprise par de nombreux
   <img src="https://miro.medium.com/v2/resize:fit:1200/1*rUUJdOUmInl-lXPq2hO4jA.jpeg" alt="Source de l'image" width="600"/>
 </p>
 
-## TP : MinIO et données ADEME
+## TD : MinIO et données ADEME
 
 Ce TP permet de mettre en pratique les concepts de **stockage objet**, **buckets**, **formats de fichiers** et **data lake**, tout en utilisant Python et Boto3 dans un environnement local gratuit.
 Nous allons manipuler MinIO pour créer un **pipeline de données** basé sur les données publiques de l’ADEME.
@@ -442,7 +523,7 @@ API_URL = "https://data.ademe.fr/data-fair/api/v1/datasets/dpe03existant/lines"
 TOTAL_PAGES = 20
 
 # Nombre de lignes récupérées par page
-PAGE_SIZE = 20
+PAGE_SIZE = 1000
 
 # ------------------------------------------------------------
 # CONFIGURATION MINIO (stockage objet type S3)
@@ -493,7 +574,7 @@ def fetch_page(page: int):
     params = {
         "size": PAGE_SIZE,
         "page": page,
-        "select": "numero_dpe,date_reception_dpe,code_postal_ban,etiquette_dpe",
+        #"select": "numero_dpe,date_reception_dpe,code_postal_ban,etiquette_dpe",
         "qs": "code_departement_ban:69"
     }
 
@@ -703,6 +784,11 @@ for root, dirs, files in os.walk(temp_folder):
 print("Parquet partitionné créé et uploadé ✅")
 ```
 
+**Explication :**
+`PyArrow.write_to_dataset()` ne supporte pas directement l’upload S3
+La fonction `pq.write_to_dataset`est conçue pour écrire sur un filesystem local ou compatible (type HDFS, S3 via fsspec, etc.).
+Si tu voulais écrire directement sur MinIO, il faudrait configurer un filesystem S3 compatible avec fsspec ou Spark. Cela complique le script et nécessite souvent des dépendances supplémentaires.
+
 ### Commandes docker
 
 Avant de lancer les scripts Python, il faut construire et démarrer l’infrastructure MinIO + Python.
@@ -837,7 +923,7 @@ http://localhost:9001
 Les données ne sont pas stockées dans le conteneur mais dans le **volume Docker**.
 
 
-## TP : Gestion des utilisateurs et policies
+## TD : Gestion des utilisateurs et policies
 
 Dans ce TP, nous allons approfondir l’utilisation de MinIO en créant des utilisateurs, en leur assignant des policies (droits d’accès) et en testant la connexion depuis Python.  
 Nous réutilisons le TP1 pour les scripts de gestion des données ADEME, mais nous ajoutons une couche de sécurité et de contrôle d’accès.
@@ -1023,7 +1109,3 @@ docker compose run python python test_users.py
 
 
 6. Modifier les scripts python du TP1 en utilisant les accès du user `etl-user`
-
-# Liens utiles : 
-
-- [Access Control with Policy Management](https://docs.min.io/enterprise/aistor-object-store/administration/iam/access/)
