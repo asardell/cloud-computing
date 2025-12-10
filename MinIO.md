@@ -1214,7 +1214,6 @@ COPY jobs /jobs
 Ils permettent à Spark de :
 - Parler le protocole S3 (`hadoop-aws`)
 - Comprendre Iceberg
-- Se connecter à PostgreSQL si besoin
 
 3. `spark/jobs/job_parquet_to_iceberg.py`
 
