@@ -46,6 +46,10 @@
     - [policies/write-policy.json](#policieswrite-policyjson)
     - [python/test\_users.py](#pythontest_userspy)
     - [Commandes à exécuter](#commandes-à-exécuter)
+  - [TD : MinIO et Apache Iceberg](#td--minio-et-apache-iceberg)
+    - [Arborescence du projet](#arborescence-du-projet-1)
+    - [Configuration Spark](#configuration-spark)
+    - [Commandes Docker expliquées](#commandes-docker-expliquées)
 
 
 # Introduction à MinIO
@@ -1109,3 +1113,209 @@ docker compose run python python test_users.py
 
 
 6. Modifier les scripts python du TP1 en utilisant les accès du user `etl-user`
+
+
+
+## TD : MinIO et Apache Iceberg
+
+Dans ce TP, vous allez :
+
+- Comprendre comment **Spark interagit avec un Data Lake**
+- Lire des données depuis MinIO via le protocole **S3A** (S3A est le connecteur Hadoop/Spark qui permet d’accéder à MinIO ou Amazon S3 comme un système de fichiers.)
+- Transformer des fichiers **Parquet** dans une **table Iceberg**
+
+Ce TP vous permet de simuler une architecture **Lakehouse** comme en entreprise.
+
+### Arborescence du projet
+
+```bash
+tp-minio-ademe/
+├── docker-compose.yml
+├── python/
+│   ├── Dockerfile
+│   ├── requirements.txt
+│   ├── test_users.py
+│   ├── fetch_ademe_to_minio.py
+│   ├── json_to_csv.py
+│   └── csv_to_parquet.py
+├── ubuntu/
+│   └── Dockerfile
+├── policies/
+│   ├── read-policy.json
+│   └── write-policy.json
+└── spark/
+    ├── Dockerfile
+    ├── spark-defaults.conf
+    └── jobs/
+        └── job_parquet_to_iceberg.py
+```
+
+
+### Configuration Spark
+
+1. `spark/spark-defaults.conf`
+
+Ce fichier configure Spark pour :
+
+- Charger les **JARs nécessaires**
+- Connecter Spark à MinIO via **S3A**
+- Activer le **catalogue Iceberg**
+
+```properties
+spark.jars=/opt/jars/iceberg-spark-runtime-3.5_2.12-1.6.0.jar,\
+/opt/jars/hadoop-aws-3.3.4.jar,\
+/opt/jars/aws-java-sdk-bundle-1.12.700.jar
+
+# Déclaration du catalogue Iceberg
+spark.sql.catalog.iceberg=org.apache.iceberg.spark.SparkCatalog
+spark.sql.catalog.iceberg.type=hadoop
+spark.sql.catalog.iceberg.warehouse=s3a://ademe-data/
+
+# Connexion à MinIO
+spark.hadoop.fs.s3a.endpoint=http://minio:9000
+spark.hadoop.fs.s3a.access.key=minioadmin
+spark.hadoop.fs.s3a.secret.key=minioadmin
+spark.hadoop.fs.s3a.path.style.access=true
+
+# Activation Iceberg
+spark.sql.extensions=org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions
+```
+
+💡 **Pourquoi c’est important ?**  
+Sans ces paramètres, Spark ne peut pas lire/écrire dans MinIO ni utiliser Iceberg.
+
+2. `spark/Dockerfile`
+
+Ce Dockerfile :
+
+- Utilise une image Spark officielle
+- Télécharge dynamiquement les dépendances
+- Ajoute la configuration Spark
+
+```dockerfile
+FROM apache/spark:3.5.0
+
+USER root
+RUN mkdir -p /opt/jars
+
+# Dépendances nécessaires
+ADD https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-spark-runtime-3.5_2.12/1.6.0/iceberg-spark-runtime-3.5_2.12-1.6.0.jar /opt/jars/
+ADD https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.4/hadoop-aws-3.3.4.jar /opt/jars/
+ADD https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.12.700/aws-java-sdk-bundle-1.12.700.jar /opt/jars/
+
+# Configuration Spark
+COPY spark-defaults.conf /opt/spark/conf/spark-defaults.conf
+
+# Jobs Spark
+COPY jobs /jobs
+```
+
+**Pourquoi ces JARs ?**  
+Ils permettent à Spark de :
+- Parler le protocole S3 (`hadoop-aws`)
+- Comprendre Iceberg
+- Se connecter à PostgreSQL si besoin
+
+3. `spark/jobs/job_parquet_to_iceberg.py`
+
+```python
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder.appName("ParquetToIceberg").getOrCreate()
+
+print("Lecture des fichiers Parquet depuis MinIO...")
+df = spark.read.parquet("s3a://ademe-data/final/parquet/")
+
+print("Aperçu des données")
+df.show(5)
+df.printSchema()
+
+print("Écriture des données au format Iceberg...")
+df.writeTo("iceberg.gold.dpe_table").createOrReplace()
+
+print("Job terminé ✅")
+```
+
+**Explication** :
+- `spark.read.parquet()` lit directement les fichiers depuis MinIO
+- `writeTo()` crée une table Iceberg logique
+- Il n’y a **aucun stockage local**, tout passe par S3A
+
+4. Service Spark dans docker-compose
+
+À ajouter dans ton `docker-compose.yml` :
+
+```yaml
+  spark:
+    build: ./spark
+    container_name: spark
+    depends_on:
+      - minio
+    volumes:
+      - ./spark/jobs:/jobs
+```
+
+**Explication** :
+- `build: ./spark` → construit l’image Docker depuis ton dossier `spark/`
+- `depends_on` → démarre MinIO avant Spark
+- `volumes` → permet de modifier les jobs sans reconstruire l’image
+
+---
+
+### Commandes Docker expliquées
+
+1. Construire les images
+
+```bash
+docker compose build
+```
+
+Cette commande :
+- Lit les `Dockerfile`
+- Télécharge Spark + dépendances
+- Prépare toutes les images
+
+
+2. Démarrer les services
+
+```bash
+docker compose up -d
+```
+
+Démarre :
+- MinIO
+- Spark
+En arrière-plan (`-d` = detached).
+
+3. Lister les conteneurs actifs
+
+```bash
+docker ps
+```
+
+Vérifie que :
+- `minio`
+- `spark`
+fonctionnent correctement.
+
+4. Lancer le job Spark
+
+```bash
+docker compose run spark /opt/spark/bin/spark-submit /jobs/job_parquet_to_iceberg.py
+```
+
+Cette commande :
+- Lance un conteneur Spark temporaire
+- Exécute ton job Python
+- Se connecte à MinIO
+- Lit Parquet → Écrit Iceberg
+
+5. Résultat attendu
+
+Si tout fonctionne :
+
+- Spark affiche un aperçu des données
+- La table Iceberg est créée
+- Les métadonnées apparaissent dans MinIO
+- Le job se termine par :  
+  `Job terminé ✅`
