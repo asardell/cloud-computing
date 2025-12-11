@@ -1075,12 +1075,12 @@ docker build -t tp2-ubuntu ./ubuntu
 docker network ls
 ```
 
-Repérer le réseau par défaut créé par `docker-compose`. Par exemple : `tp_minio_ademe_copy_default`.
+Repérer le réseau par défaut créé par `docker-compose`. Par exemple : `tp-minio-ademe_default`.
 
 3. Lancer un conteneur Ubuntu temporaire pour créer les users et policies
 
 ```bash
-docker run -it --network tp_minio_ademe_default -v ${PWD}/policies:/policies tp2-ubuntu
+docker run -it --network tp-minio-ademe_default -v ${PWD}/policies:/policies tp2-ubuntu
 ```
 
 Puis, à l’intérieur du conteneur Ubuntu :
