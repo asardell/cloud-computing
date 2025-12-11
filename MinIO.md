@@ -977,6 +977,8 @@ WORKDIR /mc
 
 # Télécharger et rendre exécutable le client mc
 RUN wget https://dl.min.io/client/mc/release/linux-amd64/mc && chmod +x mc
+
+ENV PATH="/mc:${PATH}"
 ```
 
 Ce conteneur Ubuntu est utilisé pour exécuter le client `mc` et configurer MinIO : alias, création d’utilisateurs et attribution des policies.
