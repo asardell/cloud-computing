@@ -227,11 +227,16 @@ while True:
 3) `Dockerfile`
 
 ```dockerfile
-FROM python:3.10          # Base Python 3.10  
-WORKDIR /app               # Répertoire de travail dans le container  
-COPY producer.py .         # Copie du script producer dans le container  
-RUN pip install kafka-python  # Installation de la librairie Kafka pour Python  
-CMD ["python", "producer.py"] # Commande à exécuter au démarrage du container  
+# Base Python 3.10
+FROM python:3.10
+# Répertoire de travail dans le container
+WORKDIR /app
+# Copie du script producer dans le container
+COPY producer.py .
+# Installation de la librairie Kafka pour Python
+RUN pip install kafka-python
+# Commande à exécuter au démarrage du container 
+CMD ["python", "producer.py"]  
 ```
 
 :bulb:Explications :  
