@@ -341,12 +341,18 @@ services:
 2) `Dockerfile`
 
 ```dockerfile
-FROM python:3.10               # Base Python 3.10
-WORKDIR /app                    # Répertoire de travail dans le container
-COPY producer.py .              # Copie du script producer
-RUN pip install kafka-python requests  # Installation des librairies nécessaires
-ENV PYTHONUNBUFFERED=1          # Affichage direct des logs
-CMD ["python", "producer.py"]   # Commande à exécuter au démarrage
+# Base Python 3.10
+FROM python:3.10
+# Répertoire de travail dans le container             
+WORKDIR /app      
+# Copie du script producer         
+COPY producer.py .  
+# Installation des librairies nécessaires
+RUN pip install kafka-python requests
+# Affichage direct des logs
+ENV PYTHONUNBUFFERED=1
+# Commande à exécuter au démarrage        
+CMD ["python", "producer.py"]   
 ```
 
 :bulb:Explications :  
