@@ -941,6 +941,9 @@ CREATE TABLE IF NOT EXISTS dpe_data (
 exit
 ```
 
+- `U admin` :	Se connecter avec l’utilisateur admin
+- `-d dpe`	Choisir la base de données `dpe`
+
 :bulb:Explications :  
 - Création manuelle ou vérification de la table avant de lancer le consumer.
 
