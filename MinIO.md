@@ -731,25 +731,15 @@ s3 = boto3.client(
 )
 
 # ------------------------------------------------------------
-# Lecture des fichiers JSON (Bronze)
+# Lecture du fichier CSV (Silver)
 # ------------------------------------------------------------
-objects = s3.list_objects_v2(Bucket=BUCKET_NAME, Prefix="raw/")
 
-all_rows = []
+obj = s3.get_object(
+    Bucket=BUCKET_NAME,
+    Key="processed/ademe_all.csv"
+)
 
-for obj in objects.get("Contents", []):
-    key = obj["Key"]
-
-    if key.endswith(".json"):
-        print(f"Lecture {key}")
-        body = s3.get_object(Bucket=BUCKET_NAME, Key=key)["Body"].read()
-        data = json.loads(body)
-        all_rows.extend(data)
-
-# ------------------------------------------------------------
-# Conversion vers DataFrame
-# ------------------------------------------------------------
-df = pd.DataFrame(all_rows)
+df = pd.read_csv(BytesIO(obj["Body"].read()))
 
 # Conversion Pandas → Table PyArrow
 table = pa.Table.from_pandas(df)
